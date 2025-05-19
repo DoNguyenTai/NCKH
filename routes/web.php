@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademicRequestController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\QuizzController;
+use App\Livewire\DynamicForm;
 use App\Models\quizz_question;
 use Illuminate\Support\Facades\Route;
 
@@ -25,7 +26,15 @@ Route::get('/', function () {
 Route::get('/login', [AcademicRequestController::class, 'login']);
 Route::post('/login', [AcademicRequestController::class, 'loginProcess']);
 
-Route::get('/form/{id}', [FormController::class, 'showForm']);
+Route::get('/form/{id}', [FormController::class, 'showFieldForm'])->name('form.show');
+Route::post('/form/{formId}', [FormController::class, 'submitForm'])->name('form.submit');
+
+// Route::get('/form/{id}', [FormController::class, 'showForm']);
+// Route::get('/form/{formId}', DynamicForm::class)->name('form.show');
+
+Route::get('/view-form', [FormController::class, 'viewForm']);
+
+
 Route::post('/field/update-order', [FormController::class, 'updateOrder']);
 
 

@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->integer('form_id');
             $table->string('data_type');
-            $table->string('value');
+            $table->string('label');
+            $table->json('options')->nullable();
             $table->integer('order');
             $table->timestamps();
         });

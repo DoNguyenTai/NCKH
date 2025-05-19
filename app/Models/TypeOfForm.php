@@ -10,6 +10,7 @@ class TypeOfForm extends Model
     use HasFactory;
     protected $fillable = [
         'name',
+        'form-model',
     ];
 
     public function fieldForm()

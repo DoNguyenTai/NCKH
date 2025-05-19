@@ -11,7 +11,8 @@ class FieldForm extends Model
     protected $fillable = [
         'form_id',
         'data_type',
-        'value',
+        'label',
+        'options',
         'order',
     ];
 
@@ -24,6 +25,9 @@ class FieldForm extends Model
             $fieldForm->order = $maxOrder + 1;
         });
     }
+    protected $casts = [
+        'options' => 'array',
+    ];
     
 
 
