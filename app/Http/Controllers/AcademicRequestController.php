@@ -21,7 +21,7 @@ class AcademicRequestController extends Controller
             'request_type' => 'required|string',
             'custom_fields' => 'nullable|array',
             'custom_fields.*.key' => 'required|string',
-            'custom_fields.*.value' => 'nullable|string',
+            'custom_fields.*.label' => 'nullable|string',
         ]);
 
         AcademicRequest::create([

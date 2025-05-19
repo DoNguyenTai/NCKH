@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('form_requests', function (Blueprint $table) {
+        Schema::create('form_request_values', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('type_of_form_id')
-                  ->constrained('type_of_forms')
+            $table->foreignId('form_request_id')
+                  ->constrained('form_requests')
                   ->onDelete('cascade');
+
+            $table->foreignId('field_form_id')
+                  ->constrained('field_forms')
+                  ->onDelete('cascade');
+
+            $table->json('value')->nullable(); // Dữ liệu nhập từ người dùng
             $table->timestamps();
         });
     }
@@ -25,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('form_requests');
+        Schema::dropIfExists('form_request_values');
     }
 };

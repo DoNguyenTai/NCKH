@@ -27,16 +27,45 @@
                             <div class="mt-2 p-3 bg-gray-50 rounded-lg"
                                 wire:key="custom-field-{{ $field['uuid'] ?? $index }}">
                                 <label class="block text-gray-700">Kiểu dữ liệu:</label>
-                                <select wire:model="customFields.{{ $index }}.key"
+                                <select wire:change="ChooseDataType($event.target.value, {{ $index }})"
+                                    wire:model="customFields.{{ $index }}.key"
                                     class="border rounded-md p-2 w-full mt-1">
                                     <option value="text">Text</option>
                                     <option value="email">Email</option>
                                     <option value="number">Number</option>
+                                    <option value="textarea">Textarea</option>
+                                    <option value="checkbox">Checkbox</option>
+                                    <option value="radio">Radio</option>
                                 </select>
 
                                 <label class="block text-gray-700 mt-2">Tên trường:</label>
-                                <input type="text" wire:model="customFields.{{ $index }}.value"
+                                <input type="text" wire:model="customFields.{{ $index }}.label"
                                     class="border rounded-md p-2 w-full mt-1" placeholder="Nhập giá trị">
+                                <!-- Nếu là checkbox hoặc radio thì cho phép nhập option -->
+                                @if (in_array($field['key'], ['checkbox', 'radio']))
+                                    <div class="mt-2">
+                                        <label class="block text-gray-700">Tùy chọn (Options):</label>
+
+                                        @foreach ($field['options'] ?? [] as $optIndex => $option)
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <input type="text"
+                                                    wire:model="customFields.{{ $index }}.options.{{ $optIndex }}"
+                                                    class="border rounded-md p-2 w-full" placeholder="Nhập lựa chọn">
+
+                                                <button type="button"
+                                                    wire:click="removeOption({{ $index }}, {{ $optIndex }})"
+                                                    class="text-red-600 hover:text-red-800 font-bold">
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        @endforeach
+
+                                        <button type="button" wire:click="addOption({{ $index }})"
+                                            class="mt-2 text-blue-600 hover:underline">
+                                            + Thêm lựa chọn
+                                        </button>
+                                    </div>
+                                @endif
 
                                 <button type="button" wire:click="removeCustomField({{ $index }})"
                                     class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 mt-3 rounded">
@@ -63,11 +92,12 @@
                 <div id="field_list">
                     @if (!empty($selectedForm))
                         @foreach ($selectedForm->fieldForm as $item)
-                            <div wire:key="field-{{ $item->id }}"  draggable="true" data-field-id="{{ $item->id }}"
+                            <div wire:key="field-{{ $item->id }}" draggable="true"
+                                data-field-id="{{ $item->id }}"
                                 class=" field_item bg-gray-200 shadow-xl m-3 p-4 flex justify-between items-center">
-                                <p>{{ $item->value }}</p>
+                                <p>{{ $item->label }}</p>
                                 <div class="flex gap-3">
-                                    <button  wire:click="editCustomField('UPDATE', {{ $item->id }})" >
+                                    <button wire:click="editCustomField('UPDATE', {{ $item->id }})">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                             fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
                                             <path
@@ -76,7 +106,7 @@
                                                 d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
                                         </svg>
                                     </button>
-                                    <button wire:click="deleteCustomField({{ $item->id }})" >
+                                    <button wire:click="deleteCustomField({{ $item->id }})">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                             fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
                                             <path
@@ -194,7 +224,7 @@
     }
 
     document.addEventListener('livewire:load', () => {
-    console.log('Livewire ready');
-    // Re-bind drag and drop nếu thật sự cần
-});
+        console.log('Livewire ready');
+        // Re-bind drag and drop nếu thật sự cần
+    });
 </script>

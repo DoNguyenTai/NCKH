@@ -16,7 +16,8 @@ class FormCustom extends Component
 
     public $action = 'CREATE';     // CREATE hoặc UPDATE
     public $fieldID = null;        // ID của field đang sửa
-    
+
+    public $selectedDataType;
 
     public function mount()
     {
@@ -27,26 +28,27 @@ class FormCustom extends Component
     {
         $this->selectedForm = TypeOfForm::with(['fieldForm' => function ($q) {
             $q->orderBy('order');
-        }])->find( $this->type_of_form);
+        }])->find($this->type_of_form);
         return view('livewire.form-custom');
     }
 
     public function ChoosetypeForm($formId)
     {
         $this->type_of_form = $formId;
-       
+
         $this->resetFieldState();
     }
 
     public function addCustomField($action = 'CREATE')
     {
- 
+
 
         $this->action = $action;
         $this->customFields[] = [
             'uuid' => (string) Str::uuid(),
             'key' => 'text',
-            'value' => ''
+            'label' => '',
+            'options' => []
         ];
     }
 
@@ -61,7 +63,8 @@ class FormCustom extends Component
         $this->customFields[] = [
             'uuid' => (string) Str::uuid(),
             'key' => $field->data_type,
-            'value' => $field->value
+            'label' => $field->label,
+            'options' => in_array($field->data_type, ['checkbox', 'radio']) ? ($field->options ?? []) : [],
         ];
     }
 
@@ -76,26 +79,32 @@ class FormCustom extends Component
         $this->validate([
             'type_of_form' => 'required',
             'customFields' => 'array|min:1',
-            'customFields.*.value' => 'required|string',
+            'customFields.*.label' => 'required|string',
         ]);
 
+        foreach ($this->customFields as $field) {
+            if (in_array($field['key'], ['checkbox', 'radio']) && empty(array_filter($field['options'] ?? []))) {
+                session()->flash('error', 'Checkbox hoặc Radio phải có ít nhất một lựa chọn.');
+                return;
+            }
+        }
         if ($this->action === 'CREATE') {
             $maxOrder = FieldForm::where('form_id', $this->type_of_form)->max('order') ?? 0;
 
             foreach ($this->customFields as $field) {
                 $exists = FieldForm::where('form_id', $this->type_of_form)
-                    ->where('value', $field['value'])
+                    ->where('label', $field['label'])
                     ->exists();
 
                 if ($exists) {
                     session()->flash('error', 'Tên trường đã tồn tại!');
                     return;
                 }
-
                 FieldForm::create([
                     'form_id' => $this->type_of_form,
                     'data_type' => $field['key'] ?? 'text',
-                    'value' => $field['value'],
+                    'label' => $field['label'],
+                    'options' => in_array($field['key'], ['checkbox', 'radio']) ? ($field['options'] ?? []) : null,
                     'order' => ++$maxOrder,
                 ]);
             }
@@ -107,13 +116,16 @@ class FormCustom extends Component
             if ($fieldDB) {
                 $fieldDB->update([
                     'data_type' => $this->customFields[0]['key'] ?? 'text',
-                    'value' => $this->customFields[0]['value']
+                    'label' => $this->customFields[0]['label'],
+                    'options' => in_array($this->customFields[0]['key'], ['checkbox', 'radio'])
+                        ? json_encode($this->customFields[0]['options'] ?? [])
+                        : null,
                 ]);
             }
         }
 
         $this->resetFieldState();
-        $this->dispatch('$refresh'); 
+        $this->dispatch('$refresh');
     }
 
     public function resetFieldState()
@@ -121,13 +133,44 @@ class FormCustom extends Component
         $this->customFields = [];
         $this->action = 'CREATE';
         $this->fieldID = null;
-
     }
 
-    public function deleteCustomField($id) {
+    public function deleteCustomField($id)
+    {
         FieldForm::findOrFail($id)->delete();
     }
 
-   
-   
+    // Thêm 1 option vào custom field
+    public function addOption($index)
+    {
+        if (!isset($this->customFields[$index]['options'])) {
+            $this->customFields[$index]['options'] = [];
+        }
+
+        $this->customFields[$index]['options'][] = '';
+    }
+
+    public function removeOption($fieldIndex, $optIndex)
+    {
+        if (isset($this->customFields[$fieldIndex]['options'][$optIndex])) {
+            unset($this->customFields[$fieldIndex]['options'][$optIndex]);
+            $this->customFields[$fieldIndex]['options'] = array_values($this->customFields[$fieldIndex]['options']);
+        }
+    }
+
+    public function ChooseDataType($value, $index)
+    {
+        // Nếu kiểu là checkbox hoặc radio thì đảm bảo có mảng options
+        if (in_array($value, ['checkbox', 'radio'])) {
+            if (!isset($this->customFields[$index]['options']) || !is_array($this->customFields[$index]['options'])) {
+                $this->customFields[$index]['options'] = [''];
+            }
+        } else {
+            // Nếu đổi về kiểu khác thì xóa options
+            unset($this->customFields[$index]['options']);
+        }
+
+        // Cập nhật key
+        $this->customFields[$index]['key'] = $value;
+    }
 }
