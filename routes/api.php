@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-<<<<<<< HEAD
 
 Route::get('/get-field-form/{id}', [FormController::class, 'showFieldForm']);
 
@@ -39,8 +38,6 @@ Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'up
 Route::delete('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'deleteField']);
 Route::post('/forms/{formId}/fields/reorder', [FormCustomController::class, 'reorder']);
 
-=======
 Route::get("/get",[TemplateController::class,'index']);
 Route::get("/get/{id}",[TemplateController::class,'show']);
 Route::post("/post",[TemplateController::class,'store']);
->>>>>>> b5920b2dd136f095db7e7f3f241546c9cd350980
