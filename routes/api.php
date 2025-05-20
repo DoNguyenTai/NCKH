@@ -1,12 +1,9 @@
 <?php
 
-<<<<<<< HEAD
 use App\Http\Controllers\Api\FormCustomController;
 use App\Http\Controllers\FormController;
-=======
 use App\Http\Controllers\TemplateController;
->>>>>>> b5920b2dd136f095db7e7f3f241546c9cd350980
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
