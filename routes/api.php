@@ -27,7 +27,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/create-form', [FormController::class, 'storeFormModel'])->name('storeFormModel');
     Route::get('/show-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
 });
-Route::get('/type-of-forms', [FormCustomController::class, 'getTypeOfForms']);
+Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
 Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
 
 Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);

@@ -25,13 +25,15 @@ class FormCustomController extends Controller
 
     public function storeField(Request $request, $formId)
     {
-        $request->validate([
-            'fields' => 'required|array|min:1',
-            'fields.*.label' => 'required|string',
-            'fields.*.key' => 'required|string',
-            'fields.*.options' => 'nullable|array',
-        ]);
+
+        // $request->validate([
+        //     'fields' => 'required|array|min:1',
+        //     'fields.*.label' => 'required|string',
+        //     'fields.*.key' => 'required|string',
+        //     'fields.*.options' => 'nullable|array',
+        // ]);
         $maxOrder = FieldForm::where('form_id', $formId)->max('order') ?? 0;
+      
         foreach ($request->fields as $field) {
             $exists = FieldForm::where('form_id', $formId)
                 ->where('label', $field['label'])
@@ -41,15 +43,15 @@ class FormCustomController extends Controller
                 return response()->json(['message' => 'Tên trường đã tồn tại!'], 422);
             }
 
-            if (in_array($field['key'], ['checkbox', 'radio']) && empty(array_filter($field['options'] ?? []))) {
+            if (in_array($field['data_type'], ['checkbox', 'radio']) && empty(array_filter($field['options'] ?? []))) {
                 return response()->json(['message' => 'Checkbox hoặc Radio phải có ít nhất một lựa chọn.'], 422);
             }
 
             FieldForm::create([
                 'form_id' => $formId,
                 'label' => $field['label'],
-                'data_type' => $field['key'],
-                'options' => in_array($field['key'], ['checkbox', 'radio']) ? $field['options'] : null,
+                'data_type' => $field['data_type'],
+                'options' => in_array($field['data_type'], ['checkbox', 'radio']) ? $field['options'] : null,
                 'order' => ++$maxOrder,
             ]);
         }
@@ -61,17 +63,24 @@ class FormCustomController extends Controller
     {
         $request->validate([
             'label' => 'required|string',
-            'key' => 'required|string',
+            'data_type' => 'required|string',
             'options' => 'nullable|array',
         ]);
-
+        dd($request);
         $field = FieldForm::where('form_id', $formId)->findOrFail($fieldId);
-
+        // $dataField = [
+        //     'label' => $request->label,
+        //     'data_type' => $request->data_type,
+        //     'options' => in_array($request->data_type, ['checkbox', 'radio']) ? json_encode($request->options ?? []) : null,
+        // ];
         $field->update([
             'label' => $request->label,
-            'data_type' => $request->key,
-            'options' => in_array($request->key, ['checkbox', 'radio']) ? json_encode($request->options ?? []) : null,
+            'data_type' => $request->data_type,
+            'options' => in_array($request->data_type, ['checkbox', 'radio']) ? ($request->options ?? []) : null,
+            // in_array($field['key'], ['checkbox', 'radio']) ? ($field['options'] ?? []) : null,
         ]);
+
+
 
         return response()->json(['message' => 'Cập nhật thành công.']);
     }
