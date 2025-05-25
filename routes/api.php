@@ -31,7 +31,15 @@ Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
 Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
 Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
 Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
-Route::post('/create-form', [FormCustomController::class, 'previewForm']);
+Route::post('/create-form', [FormController::class, 'storeForm']);
+Route::delete('/forms/{id}', [FormController::class, 'deleteForm']);
+Route::put('/forms/{id}', [FormController::class, 'updateForm']);
+Route::put('/forms/create-layout/{id}', [FormController::class, 'updateForm']);
+
+
+Route::get('/form-status', [FormController::class, 'statusForm']);
+
+
 
 Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);
 Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'updateField']);

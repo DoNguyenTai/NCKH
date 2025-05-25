@@ -131,10 +131,33 @@ class FormController extends Controller
     }
 
     public function storeForm(Request $request) {
-        TypeOfForm::create( [
+
+        $form =  TypeOfForm::create( [
             'name' => $request->name
         ]);
+         return response()->json($form, 200);
     }
+
+    public function deleteForm($id) {
+
+        $form =  TypeOfForm::find($id)->delete();
+         return response()->json($form, 200);
+    }
+
+    public function updateForm(Request $request, $id) {
+        $form = TypeOfForm::find($id);
+        $form->update( [
+            'name' => $request->name
+        ]);
+         return response()->json($form, 200);
+    }
+    
+    public function statusForm() {
+        $form = TypeOfForm::with('formRequest')->get();
+
+         return response()->json($form, 200);
+    }
+    
 
     
 

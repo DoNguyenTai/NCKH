@@ -17,4 +17,8 @@ class TypeOfForm extends Model
     {
         return $this->hasMany(FieldForm::class, 'form_id');
     }
+
+    public function formRequest() {
+        return $this->hasMany(FormRequest::class, 'type_of_form_id');
+    }
 }
