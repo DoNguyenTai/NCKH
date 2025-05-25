@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FieldForm;
+use App\Models\FormRequest;
+use App\Models\FormRequestValue;
 use App\Models\TypeOfForm;
 use Illuminate\Http\Request;
 
@@ -33,7 +35,7 @@ class FormCustomController extends Controller
         //     'fields.*.options' => 'nullable|array',
         // ]);
         $maxOrder = FieldForm::where('form_id', $formId)->max('order') ?? 0;
-      
+
         foreach ($request->fields as $field) {
             $exists = FieldForm::where('form_id', $formId)
                 ->where('label', $field['label'])
@@ -66,7 +68,7 @@ class FormCustomController extends Controller
             'data_type' => 'required|string',
             'options' => 'nullable|array',
         ]);
-        dd($request);
+        dd($formId);
         $field = FieldForm::where('form_id', $formId)->findOrFail($fieldId);
         // $dataField = [
         //     'label' => $request->label,
@@ -108,4 +110,41 @@ class FormCustomController extends Controller
 
         return response()->json(['message' => 'Đã cập nhật thứ tự.']);
     }
+
+    public function submitForm(Request $request, $formId)
+    {
+        // Lấy form từ DB
+        $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
+
+        // Tạo bản ghi form submission
+        $submission = FormRequest::create([
+            'type_of_form_id' => $formId,
+        ]);
+
+        foreach ($form->fieldForm as $field) {
+            $fieldKey = $field->id;
+
+            if ($request->has($fieldKey)) {
+                $value = $request->input($fieldKey);
+                if (is_array($value)) {
+                    $value = $value;
+                }
+
+                FormRequestValue::create([
+                    'form_request_id' => $submission->id,
+                    'field_form_id' => $field->id,
+                    'value' => $value,
+                ]);
+            }
+        }
+
+        return response()->json(['message' => 'Gửi biểu mẫu thành công!']);
+
+    }
+
+    public function previewForm($id)
+{
+    $data = FormRequest::with('values')->find($id);
+    return response()->json($data, 200);
+}
 }

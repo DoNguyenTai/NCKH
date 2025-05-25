@@ -74,8 +74,8 @@ class FormController extends Controller
     public function submitForm(Request $request, $formId)
 {
     // Lấy form từ DB
-    $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
 
+    $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
     // Tạo bản ghi form submission
     $submission = FormRequest::create([
         'type_of_form_id' => $formId,
@@ -87,10 +87,13 @@ class FormController extends Controller
 
         if ($request->has($fieldKey)) {
             $value = $request->input($fieldKey);
-
+    
             // Nếu là mảng (checkbox...), encode lại để lưu vào cột JSON
             if (is_array($value)) {
-                $value = json_encode($value);
+                  
+                $value = $value;
+              
+
             }
 
             FormRequestValue::create([
@@ -110,12 +113,12 @@ class FormController extends Controller
         return view('image_template');
     }
 
-    public function storeFormModel(Request $request)
+    public function storeFormModel(Request $request, $id)
     {
-        $form_name = $request->input("name");
+        // $form_name = $request->input("name");
         $form_model = $request->input("form-model");
-        $data = TypeOfForm::create([
-            'name' => $form_name,
+        $form = TypeOfForm::find($id);
+        $data = $form->update([
             'form-model' => $form_model
         ]);
         return response()->json($data, 200);
@@ -126,6 +129,19 @@ class FormController extends Controller
         $data = TypeOfForm::find($id);
         return response()->json($data, 200);
     }
+
+    public function storeForm(Request $request) {
+        TypeOfForm::create( [
+            'name' => $request->name
+        ]);
+    }
+
+    
+
+   
+
+
+
 
    
 }

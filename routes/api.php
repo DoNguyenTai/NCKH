@@ -24,11 +24,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/get-field-form/{id}', [FormController::class, 'showFieldForm']);
 
 Route::prefix('admin')->group(function () {
-    Route::post('/create-form', [FormController::class, 'storeFormModel'])->name('storeFormModel');
-    Route::get('/show-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
+    Route::post('/create-layout-form/{id}', [FormController::class, 'storeFormModel'])->name('storeFormModel');
+    Route::get('/show-layout-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
 });
 Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
 Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
+Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
+Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
+Route::post('/create-form', [FormCustomController::class, 'previewForm']);
 
 Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);
 Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'updateField']);

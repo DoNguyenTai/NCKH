@@ -23,4 +23,5 @@ class FormRequest extends Model
     {
         return $this->belongsTo(TypeOfForm::class, 'type_of_form_id');
     }
+
 }
