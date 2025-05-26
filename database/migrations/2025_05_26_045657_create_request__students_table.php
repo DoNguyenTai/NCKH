@@ -11,16 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('request__students', function (Blueprint $table) {
+        Schema::create('request_students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_name');
-            $table->string('student_id')->nullable();
-            $table->text('reason');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('request_type_id');
+  
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
             $table->string('status')->default('pending'); // pending, approved, rejected
             $table->text('note')->nullable();
             $table->timestamps();
+
+            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
+            $table->foreign('request_type_id')->references('id')->on('request_types')->onDelete('cascade');
         });
     }
 
@@ -29,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('request__students');
+        Schema::dropIfExists('request_students');
     }
 };
