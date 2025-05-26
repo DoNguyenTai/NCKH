@@ -13,4 +13,10 @@ class Template extends Model
     {
         return $this->hasMany(TemplateItem::class);
     }
+
+        public function templateID()
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

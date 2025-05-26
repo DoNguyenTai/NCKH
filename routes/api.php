@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\FormCustomController;
-use App\Http\Controllers\FormController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
+use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,35 +17,30 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-Route::get('/get-field-form/{id}', [FormController::class, 'showFieldForm']);
-
-Route::prefix('admin')->group(function () {
-    Route::post('/create-layout-form/{id}', [FormController::class, 'storeFormModel'])->name('storeFormModel');
-    Route::get('/show-layout-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
-});
-Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
-Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
-Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
-Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
-Route::post('/create-form', [FormController::class, 'storeForm']);
-Route::delete('/forms/{id}', [FormController::class, 'deleteForm']);
-Route::put('/forms/{id}', [FormController::class, 'updateForm']);
-Route::put('/forms/create-layout/{id}', [FormController::class, 'updateForm']);
-
-
-Route::get('/form-status', [FormController::class, 'statusForm']);
-
-
-
-Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);
-Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'updateField']);
-Route::delete('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'deleteField']);
-Route::post('/forms/{formId}/fields/reorder', [FormCustomController::class, 'reorder']);
 
 Route::get("/get",[TemplateController::class,'index']);
 Route::get("/get/{id}",[TemplateController::class,'show']);
 Route::post("/post",[TemplateController::class,'store']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Lấy thông tin user đã đăng nhập
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    // Ví dụ API lấy profile user
+    Route::get('/profile', [UserProfileController::class, 'show']);
+    
+    // Đăng xuất
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+// API đăng nhập, đăng ký không cần auth
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+
+Route::post('/test-token', function () {
+    $user = \App\Models\User::first();
+    $token = $user->createToken('api-token')->plainTextToken;
+    return response()->json(['token' => $token]);
+});

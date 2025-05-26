@@ -18,31 +18,33 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
 
-Route::get('/login', [AcademicRequestController::class, 'login']);
-Route::post('/login', [AcademicRequestController::class, 'loginProcess']);
-
-Route::get('/form/{id}', [FormController::class, 'showFieldForm'])->name('form.show');
-Route::post('/form/{formId}', [FormController::class, 'submitForm'])->name('form.submit');
+// Route::get('/login', [AcademicRequestController::class, 'login']);
+// Route::post('/login', [AcademicRequestController::class, 'loginProcess']);
 
 // Route::get('/form/{id}', [FormController::class, 'showForm']);
-// Route::get('/form/{formId}', DynamicForm::class)->name('form.show');
-
-Route::get('/view-form', [FormController::class, 'viewForm']);
-
-
-Route::post('/field/update-order', [FormController::class, 'updateOrder']);
+// Route::post('/field/update-order', [FormController::class, 'updateOrder']);
 
 
 
-Route::prefix('admin')->group(function () {
-    Route::get('/', [FormController::class, 'index'])->name('customFieldForm');
-    Route::post('/show', [FormController::class, 'store']);
-});
+// Route::prefix('admin')->group(function () {
+//     Route::get('/', [FormController::class, 'index'])->name('customFieldForm');
+//     Route::post('/show', [FormController::class, 'store']);
+// });
 
 
 
+
+// Route::middleware([
+//     'auth:sanctum',
+//     config('jetstream.auth_session'),
+//     'verified',
+// ])->group(function () {
+//     Route::get('/dashboard', function () {
+//         return view('dashboard');
+//     })->name('dashboard');
+// });
