@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
@@ -36,6 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Đăng xuất
     Route::post('/logout', [AuthController::class, 'logout']);
+
+     Route::post('/send-email', [MailController::class, 'send']);
 });
 
 // API đăng nhập, đăng ký không cần auth
@@ -86,3 +89,5 @@ Route::prefix('request-types')->group(function () {
     Route::delete('/{id}', [RequestTypeController::class, 'destroy']);
     Route::get('/search/keyword', [RequestTypeController::class, 'search']);
 });
+
+
