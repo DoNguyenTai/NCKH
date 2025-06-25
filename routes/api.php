@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DocxController;
 use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
@@ -91,3 +92,11 @@ Route::prefix('request-types')->group(function () {
 });
 
 
+Route::post('/upload-docx', [DocxController::class, 'upload']);
+Route::post('/export-docx', [DocxController::class, 'export']);
+// Route::get('/docx-url/{filename}', [DocxController::class, 'getFile']);
+Route::get('/docx-html/{filename}', [DocxController::class, 'convertStoredDocxToHtml']);
+Route::get('/docx-html', [DocxController::class, 'convertStoredDocxToHtml']);
+Route::get('/test-convert', [DocxController::class, 'convertDocxStoredAndResend']);
+
+Route::post('/onlyoffice/save-callback', [DocxController::class, 'handleSave']);
