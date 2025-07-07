@@ -93,6 +93,7 @@ Route::prefix('request-types')->group(function () {
 
 
 Route::post('/upload-docx', [DocxController::class, 'upload']);
+Route::post('/upload-docx1', [DocxController::class, 'uploadDocx']);
 Route::post('/export-docx', [DocxController::class, 'export']);
 // Route::get('/docx-url/{filename}', [DocxController::class, 'getFile']);
 Route::get('/docx-html/{filename}', [DocxController::class, 'convertStoredDocxToHtml']);

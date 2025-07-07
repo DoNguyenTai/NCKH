@@ -23,6 +23,35 @@ class DocxController extends Controller
             ? 'C:\\Program Files\\LibreOffice\\program\\soffice.exe'
             : '/usr/bin/soffice';
     }
+    public function uploadDocx(Request $request)
+    {
+        if (!$request->hasFile('doc_file')) {
+            return response()->json(['message' => 'Không có file gửi lên'], 400);
+        }
+        // Validate file
+        $request->validate([
+            'doc_file' => 'required|file|max:10240', // 10MB
+        ]);
+
+        // Get file
+        $file = $request->file('doc_file');
+
+        // Tên file mới
+        $filename = time() . '_' . $file->getClientOriginalName();
+
+        // Lưu vào thư mục storage/app/public/documents
+        $path = $file->storeAs('public/documents', $filename);
+
+        // Đường dẫn public
+        $publicUrl = Storage::url($path); // => /storage/documents/...
+
+        // Trả JSON response
+        return response()->json([
+            'message' => 'Upload thành công',
+            'filename' => $filename,
+            'url' => asset($publicUrl),
+        ], 200);
+    }
 
     public function upload(Request $request)
     {
@@ -170,43 +199,42 @@ class DocxController extends Controller
         }
     }
 
-public function convertDocxStoredAndResend()
-{
-    $apiToken = 'qs2x0kwunb2begoc4cmbvtf00br98ngvsq2wtkiykz4zlcyi';
-    $filePath = storage_path('app/public/test.docx');
+    public function convertDocxStoredAndResend()
+    {
+        $apiToken = 'qs2x0kwunb2begoc4cmbvtf00br98ngvsq2wtkiykz4zlcyi';
+        $filePath = storage_path('app/public/test.docx');
 
-    if (!file_exists($filePath)) {
-        return response()->json(['error' => 'File not found'], 404);
+        if (!file_exists($filePath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        // Step 1: Convert DOCX → HTML
+        $responseHtml = Http::withToken($apiToken)
+            ->attach('file', file_get_contents($filePath), 'test.docx')
+            ->post('https://api.tiny.cloud/api/docx/convert');
+
+        if (!$responseHtml->successful()) {
+            return response()->json(['error' => 'Docx to HTML failed', 'detail' => $responseHtml->body()], 500);
+        }
+
+        $html = $responseHtml->json('html');
+
+        // Step 2: Convert HTML → DOCX
+        $responseDocx = Http::withToken($apiToken)
+            ->withHeaders([
+                'Accept' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ])
+            ->post('https://api.tiny.cloud/api/html/convert', [
+                'html' => $html,
+                'css' => 'p { font-family: Arial; }', // optional
+            ]);
+
+        if (!$responseDocx->successful()) {
+            return response()->json(['error' => 'HTML to Docx failed', 'detail' => $responseDocx->body()], 500);
+        }
+
+        return response($responseDocx->body(), 200)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            ->header('Content-Disposition', 'attachment; filename=converted.docx');
     }
-
-    // Step 1: Convert DOCX → HTML
-    $responseHtml = Http::withToken($apiToken)
-        ->attach('file', file_get_contents($filePath), 'test.docx')
-        ->post('https://api.tiny.cloud/api/docx/convert');
-
-    if (!$responseHtml->successful()) {
-        return response()->json(['error' => 'Docx to HTML failed', 'detail' => $responseHtml->body()], 500);
-    }
-
-    $html = $responseHtml->json('html');
-
-    // Step 2: Convert HTML → DOCX
-    $responseDocx = Http::withToken($apiToken)
-        ->withHeaders([
-            'Accept' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ])
-        ->post('https://api.tiny.cloud/api/html/convert', [
-            'html' => $html,
-            'css' => 'p { font-family: Arial; }', // optional
-        ]);
-
-    if (!$responseDocx->successful()) {
-        return response()->json(['error' => 'HTML to Docx failed', 'detail' => $responseDocx->body()], 500);
-    }
-
-    return response($responseDocx->body(), 200)
-        ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        ->header('Content-Disposition', 'attachment; filename=converted.docx');
-}
-
 }
