@@ -10,6 +10,7 @@ class FieldForm extends Model
     use HasFactory;
     protected $fillable = [
         'form_id',
+        'key',
         'data_type',
         'label',
         'options',

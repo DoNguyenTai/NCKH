@@ -8,6 +8,7 @@ use App\Models\FormRequestValue;
 use App\Models\TypeOfForm;
 use Illuminate\Database\Eloquent\Casts\Json;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class FormController extends Controller
 {
@@ -118,6 +119,7 @@ class FormController extends Controller
         // $form_name = $request->input("name");
         $form_model = $request->input("form-model");
         $form = TypeOfForm::find($id);
+        self::deleteUploadedDocx($form['form-model']);
         $data = $form->update([
             'form-model' => $form_model
         ]);
@@ -158,6 +160,17 @@ class FormController extends Controller
          return response()->json($form, 200);
     }
     
+    public function deleteUploadedDocx($filename)
+{
+    $filePath = "public/documents/{$filename}";
+
+    if (Storage::exists($filePath)) {
+        Storage::delete($filePath);
+        return response()->json(['message' => 'Đã xóa file thành công']);
+    }
+
+    return response()->json(['message' => 'File không tồn tại'], 404);
+}
 
     
 

@@ -28,15 +28,10 @@ class FormCustomController extends Controller
     public function storeField(Request $request, $formId)
     {
 
-        // $request->validate([
-        //     'fields' => 'required|array|min:1',
-        //     'fields.*.label' => 'required|string',
-        //     'fields.*.key' => 'required|string',
-        //     'fields.*.options' => 'nullable|array',
-        // ]);
         $maxOrder = FieldForm::where('form_id', $formId)->max('order') ?? 0;
 
         foreach ($request->fields as $field) {
+
             $exists = FieldForm::where('form_id', $formId)
                 ->where('label', $field['label'])
                 ->exists();
@@ -51,6 +46,7 @@ class FormCustomController extends Controller
 
             FieldForm::create([
                 'form_id' => $formId,
+                'key' => $field['key'],
                 'label' => $field['label'],
                 'data_type' => $field['data_type'],
                 'options' => in_array($field['data_type'], ['checkbox', 'radio']) ? $field['options'] : null,
@@ -68,7 +64,6 @@ class FormCustomController extends Controller
             'data_type' => 'required|string',
             'options' => 'nullable|array',
         ]);
-        dd($formId);
         $field = FieldForm::where('form_id', $formId)->findOrFail($fieldId);
         // $dataField = [
         //     'label' => $request->label,

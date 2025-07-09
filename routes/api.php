@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\FormCustomController;
 use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocxController;
+use App\Http\Controllers\FormController;
 use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
-use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
@@ -101,3 +102,35 @@ Route::get('/docx-html', [DocxController::class, 'convertStoredDocxToHtml']);
 Route::get('/test-convert', [DocxController::class, 'convertDocxStoredAndResend']);
 
 Route::post('/onlyoffice/save-callback', [DocxController::class, 'handleSave']);
+
+Route::get('/get-field-form/{id}', [FormController::class, 'showFieldForm']);
+
+Route::prefix('admin')->group(function () {
+    Route::post('/create-layout-form/{id}', [FormController::class, 'storeFormModel'])->name('storeFormModel');
+    Route::get('/show-layout-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
+});
+Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
+Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
+Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
+Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
+Route::post('/create-form', [FormController::class, 'storeForm']);
+Route::delete('/forms/{id}', [FormController::class, 'deleteForm']);
+Route::put('/forms/{id}', [FormController::class, 'updateForm']);
+Route::put('/forms/create-layout/{id}', [FormController::class, 'updateForm']);
+
+
+Route::get('/form-status', [FormController::class, 'statusForm']);
+
+
+
+Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);
+Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'updateField']);
+Route::delete('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'deleteField']);
+Route::post('/forms/{formId}/fields/reorder', [FormCustomController::class, 'reorder']);
+
+Route::get('/preview-docx/{filename}', [DocxController::class, 'convertDocxToHtml']);
+Route::get('/convert-docx-html-libre/{filename}', [DocxController::class, 'convertWithLibreOffice']);
+Route::get('/convert-pandoc/{filename}', [DocxController::class, 'convertDocxWithPandoc']);
+
+
+

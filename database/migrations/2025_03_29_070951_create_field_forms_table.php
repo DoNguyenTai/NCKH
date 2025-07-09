@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('field_forms', function (Blueprint $table) {
             $table->id();
             $table->integer('form_id');
+            $table->string('key')->nullable();
             $table->string('data_type');
             $table->string('label');
             $table->json('options')->nullable();

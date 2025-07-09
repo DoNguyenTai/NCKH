@@ -5,13 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpWord\Writer\HTML;
+
 
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 use DOMDocument;
 
 use Illuminate\Support\Facades\Http;
+
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Element\Text;
+use PhpOffice\PhpWord\Element\TextRun;
+use PhpOffice\PhpWord\Element\Table;
+use ZipArchive;
 
 class DocxController extends Controller
 {
@@ -25,32 +30,30 @@ class DocxController extends Controller
     }
     public function uploadDocx(Request $request)
     {
-        if (!$request->hasFile('doc_file')) {
-            return response()->json(['message' => 'Không có file gửi lên'], 400);
-        }
-        // Validate file
+        // Validate
         $request->validate([
-            'doc_file' => 'required|file|max:10240', // 10MB
+            'doc_file' => 'required|file|max:10240', // max 10MB
         ]);
+        
+        // self::deleteUploadedDocx($filename);
+       
 
-        // Get file
         $file = $request->file('doc_file');
-
-        // Tên file mới
         $filename = time() . '_' . $file->getClientOriginalName();
-
-        // Lưu vào thư mục storage/app/public/documents
+        
+        // Lưu file
         $path = $file->storeAs('public/documents', $filename);
+        $fullPath = storage_path('app/' . $path);
 
-        // Đường dẫn public
-        $publicUrl = Storage::url($path); // => /storage/documents/...
+        // Đọc biến từ file
+        $placeholders = $this->extractDocxPlaceholders($fullPath);
 
-        // Trả JSON response
         return response()->json([
             'message' => 'Upload thành công',
             'filename' => $filename,
-            'url' => asset($publicUrl),
-        ], 200);
+            'url' => asset(Storage::url($path)), // đường public
+            'variables' => $placeholders,
+        ]);
     }
 
     public function upload(Request $request)
@@ -236,5 +239,62 @@ class DocxController extends Controller
         return response($responseDocx->body(), 200)
             ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
             ->header('Content-Disposition', 'attachment; filename=converted.docx');
+    }
+    private function extractDocxPlaceholders($filePath)
+    {
+        if (!file_exists($filePath)) {
+            return ['❌ File không tồn tại'];
+        }
+
+        $zip = new \ZipArchive;
+        $res = $zip->open($filePath);
+
+        if ($res !== true) {
+            return ['❌ Không mở được file DOCX. Mã lỗi: ' . $res];
+        }
+
+        $content = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        if (!$content) {
+            return ['❌ Không đọc được nội dung word/document.xml'];
+        }
+
+        $xml = str_replace(['</w:t><w:t>', '</w:t>', '<w:t>'], '', $content);
+        preg_match_all('/\{([a-zA-Z0-9_]+)\}/', $xml, $matches);
+
+        return array_unique($matches[1]);
+    }
+    public function convertDocxToHtml($filename)
+    {
+        $filePath = storage_path('app/public/documents/' . $filename);
+
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'File không tồn tại'], 404);
+        }
+
+        try {
+            $phpWord = IOFactory::load($filePath, 'Word2007');
+            $htmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+            ob_start();
+            $htmlWriter->save('php://output');
+            $html = ob_get_clean();
+
+            return response()->json(['html' => $html]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Không đọc được file: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteUploadedDocx($filename)
+    {
+        $filePath = "public/documents/{$filename}";
+
+        if (Storage::exists($filePath)) {
+            Storage::delete($filePath);
+            return response()->json(['message' => 'Đã xóa file thành công']);
+        }
+
+        return response()->json(['message' => 'File không tồn tại'], 404);
     }
 }
