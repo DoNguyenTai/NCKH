@@ -131,6 +131,8 @@ Route::post('/forms/{formId}/fields/reorder', [FormCustomController::class, 'reo
 Route::get('/preview-docx/{filename}', [DocxController::class, 'convertDocxToHtml']);
 Route::get('/convert-docx-html-libre/{filename}', [DocxController::class, 'convertWithLibreOffice']);
 Route::get('/convert-pandoc/{filename}', [DocxController::class, 'convertDocxWithPandoc']);
+Route::get('/docx-to-html/{filename}', [DocxController::class, 'convertDocxToHtml1']);
+
 
 
 

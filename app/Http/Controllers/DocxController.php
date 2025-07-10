@@ -34,13 +34,13 @@ class DocxController extends Controller
         $request->validate([
             'doc_file' => 'required|file|max:10240', // max 10MB
         ]);
-        
+
         // self::deleteUploadedDocx($filename);
-       
+
 
         $file = $request->file('doc_file');
         $filename = time() . '_' . $file->getClientOriginalName();
-        
+
         // Lưu file
         $path = $file->storeAs('public/documents', $filename);
         $fullPath = storage_path('app/' . $path);
@@ -296,5 +296,65 @@ class DocxController extends Controller
         }
 
         return response()->json(['message' => 'File không tồn tại'], 404);
+    }
+
+    private function getSofficePath(): string
+    {
+        $envPath = env('SOFFICE_PATH');
+        if ($envPath && file_exists(str_replace('"', '', $envPath))) {
+            return $envPath;
+        }
+
+        switch (PHP_OS_FAMILY) {
+            case 'Windows':
+                return '"C:\Program Files\LibreOffice\program\soffice.exe"';
+            case 'Darwin': // macOS
+                return '/Applications/LibreOffice.app/Contents/MacOS/soffice';
+            case 'Linux':
+            default:
+                return 'libreoffice';
+        }
+    }
+    public function convertDocxToHtml1(string $filename)
+    {
+        $inputPath = storage_path("app/public/documents/{$filename}");
+        $outputDir = storage_path('app/public/html');
+
+        // Kiểm tra file đầu vào
+        if (!file_exists($inputPath)) {
+            return response()->json(['message' => 'File không tồn tại'], 404);
+        }
+
+        // Tạo thư mục chứa file HTML nếu chưa có
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
+        }
+
+        // Đường dẫn đến LibreOffice
+        $soffice = $this->getSofficePath();
+
+        // Lệnh chuyển đổi DOCX → HTML
+        $cmd = $soffice . ' --headless --convert-to html --outdir ' .
+            escapeshellarg($outputDir) . ' ' . escapeshellarg($inputPath);
+
+        exec($cmd, $output, $resultCode);
+
+        if ($resultCode !== 0) {
+            return response()->json(['message' => 'Chuyển đổi thất bại'], 500);
+        }
+
+        $htmlFilename = pathinfo($filename, PATHINFO_FILENAME) . '.html';
+        $htmlPath = $outputDir . '/' . $htmlFilename;
+
+        if (!file_exists($htmlPath)) {
+            return response()->json(['message' => 'Không tìm thấy file HTML sau khi chuyển đổi'], 500);
+        }
+
+        $htmlContent = file_get_contents($htmlPath);
+
+        // ✅ Trả HTML để preview
+        return response()->json([
+            'html'=> $htmlContent,
+        ]);
     }
 }

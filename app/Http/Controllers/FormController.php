@@ -119,6 +119,7 @@ class FormController extends Controller
         // $form_name = $request->input("name");
         $form_model = $request->input("form-model");
         $form = TypeOfForm::find($id);
+        $form->fieldForm()->delete();
         self::deleteUploadedDocx($form['form-model']);
         $data = $form->update([
             'form-model' => $form_model
@@ -141,8 +142,11 @@ class FormController extends Controller
     }
 
     public function deleteForm($id) {
-
-        $form =  TypeOfForm::find($id)->delete();
+        
+        $form =  TypeOfForm::find($id);
+        $form->fieldForm()->delete();
+        $this->deleteUploadedDocx($form['form-model']);
+        $form->delete();
          return response()->json($form, 200);
     }
 
