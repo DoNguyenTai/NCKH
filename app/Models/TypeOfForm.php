@@ -21,4 +21,9 @@ class TypeOfForm extends Model
     public function formRequest() {
         return $this->hasMany(FormRequest::class, 'type_of_form_id');
     }
+
+    public function dependencyForm()
+    {
+        return $this->hasMany(DependencyForm::class, 'form_id');
+    }
 }

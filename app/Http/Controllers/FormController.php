@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DependencyForm;
 use App\Models\FieldForm;
 use App\Models\FormRequest;
 use App\Models\FormRequestValue;
@@ -73,40 +74,38 @@ class FormController extends Controller
     }
 
     public function submitForm(Request $request, $formId)
-{
-    // Lấy form từ DB
+    {
+        // Lấy form từ DB
 
-    $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
-    // Tạo bản ghi form submission
-    $submission = FormRequest::create([
-        'type_of_form_id' => $formId,
-    ]);
+        $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
+        // Tạo bản ghi form submission
+        $submission = FormRequest::create([
+            'type_of_form_id' => $formId,
+        ]);
 
-    // Lưu từng giá trị form vào form_submission_values
-    foreach ($form->fieldForm as $field) {
-        $fieldKey = 'field_' . $field->id;
+        // Lưu từng giá trị form vào form_submission_values
+        foreach ($form->fieldForm as $field) {
+            $fieldKey = 'field_' . $field->id;
 
-        if ($request->has($fieldKey)) {
-            $value = $request->input($fieldKey);
-    
-            // Nếu là mảng (checkbox...), encode lại để lưu vào cột JSON
-            if (is_array($value)) {
-                  
-                $value = $value;
-              
+            if ($request->has($fieldKey)) {
+                $value = $request->input($fieldKey);
 
+                // Nếu là mảng (checkbox...), encode lại để lưu vào cột JSON
+                if (is_array($value)) {
+
+                    $value = $value;
+                }
+
+                FormRequestValue::create([
+                    'form_request_id' => $submission->id,
+                    'field_form_id' => $field->id,
+                    'value' => $value,
+                ]);
             }
-
-            FormRequestValue::create([
-                'form_request_id' => $submission->id,
-                'field_form_id' => $field->id,
-                'value' => $value,
-            ]);
         }
-    }
 
-    return back()->with('success', 'Gửi biểu mẫu thành công!');
-}
+        return back()->with('success', 'Gửi biểu mẫu thành công!');
+    }
 
 
     public function viewForm()
@@ -133,55 +132,78 @@ class FormController extends Controller
         return response()->json($data, 200);
     }
 
-    public function storeForm(Request $request) {
+    public function storeForm(Request $request)
+    {
 
-        $form =  TypeOfForm::create( [
+        $form =  TypeOfForm::create([
             'name' => $request->name
         ]);
-         return response()->json($form, 200);
+        return response()->json($form, 200);
     }
 
-    public function deleteForm($id) {
-        
+    public function deleteForm($id)
+    {
+
         $form =  TypeOfForm::find($id);
         $form->fieldForm()->delete();
         $this->deleteUploadedDocx($form['form-model']);
         $form->delete();
-         return response()->json($form, 200);
+        return response()->json($form, 200);
     }
 
-    public function updateForm(Request $request, $id) {
+    public function updateForm(Request $request, $id)
+    {
         $form = TypeOfForm::find($id);
-        $form->update( [
+        $form->update([
             'name' => $request->name
         ]);
-         return response()->json($form, 200);
+        return response()->json($form, 200);
     }
-    
-    public function statusForm() {
+
+    public function statusForm()
+    {
         $form = TypeOfForm::with('formRequest')->get();
 
-         return response()->json($form, 200);
+        return response()->json($form, 200);
     }
-    
+
     public function deleteUploadedDocx($filename)
-{
-    $filePath = "public/documents/{$filename}";
+    {
+        $filePath = "public/documents/{$filename}";
 
-    if (Storage::exists($filePath)) {
-        Storage::delete($filePath);
-        return response()->json(['message' => 'Đã xóa file thành công']);
+        if (Storage::exists($filePath)) {
+            Storage::delete($filePath);
+            return response()->json(['message' => 'Đã xóa file thành công']);
+        }
+
+        return response()->json(['message' => 'File không tồn tại'], 404);
     }
 
-    return response()->json(['message' => 'File không tồn tại'], 404);
-}
+    public function dependencyForm(Request $request)
+    {
+        $formId = $request->input('form_id');
+        $dependencyFormId = $request->input('dependency_form_id');
+        DependencyForm::where('form_id', $formId)->delete();
+        foreach ($dependencyFormId as $value) {
+            DependencyForm::create([
+                'form_id' => $formId,
+                'dependency_form_id' => $value,
+            ]);
+        }
+        return response()->json(['message' => 'Success'], 200);
+    }
 
-    
-
-   
-
-
-
-
-   
+    public function getDependencyForms($formId)
+    {
+        $dependencies = DependencyForm::with('dependencyName')->where('form_id', $formId)->get();
+        return response()->json([
+            'form_id' => $formId,
+            'dependencies' => $dependencies->map(function ($dep) {
+                return [
+                    'id' => $dep->dependency_form_id,
+                    'name' => $dep->dependencyName->name ?? null,
+                ];
+            }),
+        ]);
+    }
 }

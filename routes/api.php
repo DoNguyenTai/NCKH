@@ -117,9 +117,12 @@ Route::post('/create-form', [FormController::class, 'storeForm']);
 Route::delete('/forms/{id}', [FormController::class, 'deleteForm']);
 Route::put('/forms/{id}', [FormController::class, 'updateForm']);
 Route::put('/forms/create-layout/{id}', [FormController::class, 'updateForm']);
+Route::post('/forms/dependency', [FormController::class, 'dependencyForm']);
+Route::get('/forms/{id}/dependencies', [FormController::class, 'getDependencyForms']);
 
 
 Route::get('/form-status', [FormController::class, 'statusForm']);
+
 
 
 
@@ -127,6 +130,7 @@ Route::post('/forms/{formId}', [FormCustomController::class, 'storeField']);
 Route::put('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'updateField']);
 Route::delete('/forms/{formId}/fields/{fieldId}', [FormCustomController::class, 'deleteField']);
 Route::post('/forms/{formId}/fields/reorder', [FormCustomController::class, 'reorder']);
+
 
 Route::get('/preview-docx/{filename}', [DocxController::class, 'convertDocxToHtml']);
 Route::get('/convert-docx-html-libre/{filename}', [DocxController::class, 'convertWithLibreOffice']);
