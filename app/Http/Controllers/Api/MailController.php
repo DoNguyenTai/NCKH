@@ -48,7 +48,7 @@ class MailController extends Controller
         $emailsSent = 0;
 
         foreach ($students as $student) {
-            if (!$student->email) {return }; // Bỏ qua nếu không có email
+            if (!$student->email) continue; // Bỏ qua nếu không có email
 
             $data = [
                 'name' => $student->name,
