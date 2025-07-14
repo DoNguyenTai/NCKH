@@ -11,7 +11,7 @@ class FormRequest extends Model
 
     protected $fillable = [
         'type_of_form_id',
-        
+
     ];
 
     public function values()
@@ -23,5 +23,8 @@ class FormRequest extends Model
     {
         return $this->belongsTo(TypeOfForm::class, 'type_of_form_id');
     }
-
+    public function requestStudents()
+    {
+        return $this->hasMany(RequestStudent::class);
+    }
 }

@@ -8,17 +8,23 @@ use Illuminate\Database\Eloquent\Model;
 class RequestStudent extends Model
 {
     use HasFactory;
-    protected $fillable = [
-        // 'reason',
-        'start_date',
-        'end_date',
-        'status',
-        // 'note'
-    ];
 
-    public function studentId()
+    protected $fillable = ['folder_id', 'student_code','status'];
+
+    public function folder()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Folder::class);
+    }
+    // Quan hệ tới FormRequest
+    public function formRequest()
+    {
+        return $this->belongsTo(FormRequest::class, 'form_request_id');
+    }
+
+    // Quan hệ tới Student (dựa theo student_code)
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_code', 'student_code');
     }
     public function requestType()
     {

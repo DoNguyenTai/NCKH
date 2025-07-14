@@ -14,12 +14,20 @@ return new class extends Migration
         Schema::create('form_request_values', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_request_id')
-                  ->constrained('form_requests')
-                  ->onDelete('cascade');
+                ->constrained('form_requests')
+                ->onDelete('cascade');
 
             $table->foreignId('field_form_id')
-                  ->constrained('field_forms')
-                  ->onDelete('cascade');
+                ->constrained('field_forms')
+                ->onDelete('cascade');
+
+
+            $table->string('student_code');
+            // Nếu muốn tạo liên kết thủ công (không bắt buộc nhưng tốt để đảm bảo toàn vẹn)
+            $table->foreign('student_code')
+                ->references('student_code')
+                ->on('students')
+                ->onDelete('cascade');
 
             $table->json('value')->nullable(); // Dữ liệu nhập từ người dùng
             $table->timestamps();

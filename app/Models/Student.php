@@ -9,7 +9,11 @@ class Student extends Model
 {
   use HasFactory;
 
-
+  protected $fillable = [
+    'student_code',
+    'name',
+    'email'
+  ];
 
 
   public function user()
@@ -26,4 +30,15 @@ class Student extends Model
   {
     return $this->belongsTo(RequestType::class);
   }
+
+
+  public function formRequestValues()
+  {
+    return $this->hasMany(FormRequestValue::class, 'student_code', 'student_code');
+  }
+
+  public function requestStudents()
+    {
+        return $this->hasMany(RequestStudent::class, 'student_code', 'student_code');
+    }
 }

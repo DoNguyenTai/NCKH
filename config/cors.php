@@ -15,11 +15,12 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'login', 'logout', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins' => ['http://localhost:*'],
+
 
     'allowed_origins_patterns' => [],
 
@@ -30,5 +31,7 @@ return [
     'max_age' => 0,
 
     'supports_credentials' => false,
+    'allowed_methods' => ['*'], // hoặc GET, POST, PUT, DELETE
+    'allowed_headers' => ['*'],
 
 ];

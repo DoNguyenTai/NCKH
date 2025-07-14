@@ -8,86 +8,101 @@ use Illuminate\Http\Request;
 
 class RequestStudentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
+    // Lấy toàn bộ danh sách RequestStudent kèm thông tin folder và student
     public function index()
     {
-        return response()->json(RequestStudent::with(['studentId', 'requestType'])->get());
+        $data = RequestStudent::with(['folder:id,name', 'student:student_code,name'])->get();
+
+        // Format lại chỉ trả về cần thiết
+        $formatted = $data->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'folder_name' => $item->folder->name ?? null,
+                'student_name' => $item->student->name ?? null,
+                'folder_id' => $item->folder->name ?? null,
+                'status' => $item->status,
+
+                'student_code' => $item->student_code,
+                'created_at' => $item->created_at,
+            ];
+        });
+
+        return response()->json($formatted);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Tạo mới một bản ghi
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'request_type_id' => 'required|exists:request_types,id',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
-            'note' => 'nullable|string',
+        $request->validate([
+            'folder_id' => 'required|exists:folders,id',
+            'student_code' => 'required|exists:students,student_code',
+            'status' => 'string',
         ]);
 
-        $data['status'] = 'pending';
-        $requestStudent = RequestStudent::create($data);
+        $requestStudent = RequestStudent::create([
+            'folder_id' => $request->folder_id,
+            'student_code' => $request->student_code,
+            'status' => $request->status,
+        ]);
 
         return response()->json($requestStudent, 201);
     }
-    /**
-     * Display the specified resource.
-     */
+
+    // Lấy chi tiết một bản ghi theo ID
     public function show($id)
     {
-        $data = RequestStudent::with(['studentId', 'requestType'])->findOrFail($id);
-        return response()->json($data);
+        $requestStudent = RequestStudent::with(['folder', 'student'])->findOrFail($id);
+        return response()->json($requestStudent);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(RequestStudent $RequestStudent)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
+    // Cập nhật thông tin bản ghi
     public function update(Request $request, $id)
     {
         $requestStudent = RequestStudent::findOrFail($id);
 
-        $data = $request->validate([
-            'student_id' => 'sometimes|exists:students,id',
-            'request_type_id' => 'sometimes|exists:request_types,id',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
-            'status' => 'in:pending,approved,rejected',
-            'note' => 'nullable|string',
+        $request->validate([
+            'folder_id' => 'sometimes|exists:folders,id',
+            'student_code' => 'sometimes|exists:students,student_code',
+            'status' => 'sometimes|string' //
         ]);
 
-        $requestStudent->update($data);
+        $requestStudent->update($request->only(['folder_id', 'student_code']));
 
         return response()->json($requestStudent);
     }
-    /**
-     * Remove the specified resource from storage.
-     */
+
+    // Xóa bản ghi
     public function destroy($id)
     {
         $requestStudent = RequestStudent::findOrFail($id);
         $requestStudent->delete();
 
-        return response()->json(['message' => 'Deleted successfully.']);
+        return response()->json(['message' => 'Đã xoá thành công']);
+    }
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:request_students,id',
+            'status' => 'required|string|max:255',
+        ]);
+
+        RequestStudent::whereIn('id', $request->ids)->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json(['message' => 'Cập nhật trạng thái thành công']);
+    }
+
+    public function searchByStudentCode($student_code)
+    {
+        $studentCode = $student_code;
+
+        $results = RequestStudent::where('student_code', 'like', "%$studentCode%")->with(['folder', 'student'])->get();
+
+        return response()->json($results);
     }
 
     public function showByStudentId($student_id)
@@ -127,5 +142,19 @@ class RequestStudentController extends Controller
         })->with(['student', 'requestType'])->get();
 
         return response()->json($results);
+    }
+
+    public function getAllByStudentCode($studentCode)
+    {
+        $data = \App\Models\RequestStudent::where('student_code', $studentCode)
+            ->with([
+                'formRequest.values' => function ($q) use ($studentCode) {
+                    $q->where('student_code', $studentCode)->with('field');
+                },
+                'formRequest.formType.folder'
+            ])
+            ->get();
+
+        return response()->json($data, 200);
     }
 }
