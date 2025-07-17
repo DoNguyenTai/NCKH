@@ -30,7 +30,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
     'allowed_methods' => ['*'], // hoặc GET, POST, PUT, DELETE
     'allowed_headers' => ['*'],
 

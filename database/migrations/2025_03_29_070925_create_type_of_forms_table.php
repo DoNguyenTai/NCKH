@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string("name");
             $table->longText("form_model")->nullable();
-            $table->foreignId('parent_id')->constrained('folders')->onDelete('cascade');
+            $table->foreignId('parent_id')->nullable()->constrained('folders')->onDelete('cascade');
             $table->timestamps();
         });
     }

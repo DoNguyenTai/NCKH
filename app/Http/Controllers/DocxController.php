@@ -317,7 +317,7 @@ class DocxController extends Controller
     }
     public function convertDocxToHtml1(string $filename)
     {
-        $inputPath = storage_path("app/public/documents/{$filename}");
+        $inputPath = storage_path('app/public/documents/'.$filename);
         $outputDir = storage_path('app/public/html');
 
         // Kiểm tra file đầu vào
