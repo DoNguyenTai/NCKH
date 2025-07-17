@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\DomCrawler\Crawler;
 
 class ScrapeController extends Controller
@@ -20,14 +21,16 @@ class ScrapeController extends Controller
         }
 
         try {
-            $client = new Client();
+            $client = new Client([
+                'verify' => false,
+            ]);
             $response = $client->get($url);
             $html = (string) $response->getBody();
             $crawler = new Crawler($html);
             $texts = $crawler->filter($selector)->each(function ($node) {
                 return trim($node->text());
             });
-            \Log::info($texts);
+            Log::info($texts);
 
             if ($texts) {
                 return response()->json([

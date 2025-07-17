@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Models\FormRequest;
 use App\Models\RequestStudent;
 use Illuminate\Http\Request;
 
@@ -100,8 +100,7 @@ class RequestStudentController extends Controller
     {
         $studentCode = $student_code;
 
-        $results = RequestStudent::where('student_code', 'like', "%$studentCode%")->with(['folder', 'student'])->get();
-
+        $results = FormRequest::where('student_code', 'like', "%$studentCode%")->with('formType')->get();
         return response()->json($results);
     }
 

@@ -107,98 +107,174 @@ class FormCustomController extends Controller
 
         return response()->json(['message' => 'Đã cập nhật thứ tự.']);
     }
+    // public function submitForm(Request $request, $formId)
+    // {
+    //     // 1. Xác thực dữ liệu đầu vào (Validation)
+    //     // Đây là bước quan trọng nhất. Bạn có thể tạo một Form Request riêng
+    //     // hoặc dùng Validator::make() trực tiếp ở đây.
+    //     $validator = Validator::make($request->all(), [
+    //         'student_code' => [
+    //             'required',
+    //             'string',
+    //             // Đảm bảo đúng 8 chữ số
+    //             // 'exists:students,code', // Giả sử cột MSSV trong bảng 'students' là 'code'
+    //             // Bỏ comment dòng này nếu bạn có bảng students và muốn kiểm tra sự tồn tại
+    //         ],
+    //         'values' => 'required|array', // 'values' phải là một mảng
+    //         // Thêm các quy tắc xác thực cho từng trường cụ thể nếu cần
+    //         // Ví dụ: 'values.*.field_id' => 'required|integer|exists:field_forms,id',
+    //         // 'values.*.value' => 'required|string|max:255',
+    //     ], [
+    //         'student_code.required' => 'Vui lòng nhập mã số sinh viên.',
+    //         'student_code.string' => 'Mã số sinh viên phải là chuỗi.',
+    //         'student_code.exists' => 'Mã số sinh viên không tồn tại.',
+    //         'values.required' => 'Không có giá trị biểu mẫu nào được gửi.',
+
+    //     ]);
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'message' => 'Dữ liệu không hợp lệ.',
+    //             'errors' => $validator->errors()
+    //         ], 422); // 422 Unprocessable Entity
+    //     }
+
+    //     $studentCode = $request->input('student_code');
+    //     $inputValues = $request->input('values', []);
+     
+    //     // Kiểm tra sự tồn tại của MSSV nếu chưa dùng 'exists' rule
+    //     // if (!Student::where('code', $studentCode)->exists()) {
+    //     //     return response()->json(['message' => 'Mã số sinh viên không tồn tại.'], 404);
+    //     // }
+
+    //     // Tìm biểu mẫu
+    //     try {
+    //         $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json(['message' => 'Biểu mẫu không tìm thấy.'], 404);
+    //     }
+    //     // 2. Sử dụng Database Transaction để đảm bảo tính nguyên tử
+    //     DB::beginTransaction();
+    //     try {
+    //         // Tạo bản ghi gửi biểu mẫu chính
+    //         $submission = FormRequest::create([
+    //             'type_of_form_id' => $formId,
+    //             // Thêm student_code vào FormRequest nếu cần để dễ truy vấn
+    //             'student_code' => $studentCode,
+    //         ]);
+    //         $now = now()->toDateTimeString();
+
+    //         $formRequestValues = [];
+    //         foreach ($form->fieldForm as $field) {
+    //             $fieldKey = $field->id;
+
+    //             // Lấy giá trị từ inputValues, nếu không có thì mặc định là null hoặc chuỗi rỗng
+    //             // Tùy thuộc vào yêu cầu của từng trường (có thể kiểm tra 'required' ở validation)
+    //             $value = $inputValues[$fieldKey] ?? null;
+
+    //             // Nếu bạn muốn chỉ lưu các trường có giá trị được gửi lên
+    //             if ($value !== null) { // Hoặc dùng !empty($value) tùy vào logic của bạn
+    //                 $formRequestValues[] = [
+    //                     'form_request_id' => $submission->id,
+    //                     'field_form_id' => $field->id,
+    //                     'student_code' => $studentCode, // Nên lưu student_code ở đây để dễ truy vấn
+    //                     'value' => $value,
+    //                     'created_at' => $now, // Thêm timestamps thủ công cho bulk insert
+    //                     'updated_at' => $now,
+    //                 ];
+    //             }
+    //         }
+
+    //         // 3. Tối ưu hiệu suất với Bulk Insert
+    //         // if (!empty($formRequestValues)) {
+    //         //     FormRequestValue::insert($formRequestValues);
+
+    //         // }
+
+    //         DB::commit(); // Hoàn tất giao dịch
+
+    //         return response()->json(['message' => 'Gửi biểu mẫu thành công!']);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack(); // Hoàn tác giao dịch nếu có lỗi
+    //         \Log::error("Lỗi khi gửi biểu mẫu: " . $e->getMessage(), ['exception' => $e]);
+    //         return response()->json(['message' => 'Đã xảy ra lỗi khi xử lý biểu mẫu. Vui lòng thử lại sau.'], 500);
+    //     }
+    // }
+
     public function submitForm(Request $request, $formId)
-    {
-        // 1. Xác thực dữ liệu đầu vào (Validation)
-        // Đây là bước quan trọng nhất. Bạn có thể tạo một Form Request riêng
-        // hoặc dùng Validator::make() trực tiếp ở đây.
-        $validator = Validator::make($request->all(), [
-            'student_code' => [
-                'required',
-                'string',
-                // Đảm bảo đúng 8 chữ số
-                // 'exists:students,code', // Giả sử cột MSSV trong bảng 'students' là 'code'
-                // Bỏ comment dòng này nếu bạn có bảng students và muốn kiểm tra sự tồn tại
-            ],
-            'values' => 'required|array', // 'values' phải là một mảng
-            // Thêm các quy tắc xác thực cho từng trường cụ thể nếu cần
-            // Ví dụ: 'values.*.field_id' => 'required|integer|exists:field_forms,id',
-            // 'values.*.value' => 'required|string|max:255',
-        ], [
-            'student_code.required' => 'Vui lòng nhập mã số sinh viên.',
-            'student_code.string' => 'Mã số sinh viên phải là chuỗi.',
-            'student_code.exists' => 'Mã số sinh viên không tồn tại.',
-            'values.required' => 'Không có giá trị biểu mẫu nào được gửi.',
+{
+    // Lấy form từ DB
+    $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
+    // Tạo bản ghi form submission
+    $submission = FormRequest::create([
+        'type_of_form_id' => $formId,
+        'student_code' => $request->studentCode,
+    ]);
 
-        ]);
+    $items = $request->input('values'); // lấy mảng values
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Dữ liệu không hợp lệ.',
-                'errors' => $validator->errors()
-            ], 422); // 422 Unprocessable Entity
-        }
+    foreach ($form->fieldForm as $field) {
+        $fieldKey = $field->id;
 
-        $studentCode = $request->input('student_code');
-        $inputValues = $request->input('values', []);
+        if (array_key_exists($fieldKey, $items)) {
+            $value = $items[$fieldKey];
 
-        // Kiểm tra sự tồn tại của MSSV nếu chưa dùng 'exists' rule
-        // if (!Student::where('code', $studentCode)->exists()) {
-        //     return response()->json(['message' => 'Mã số sinh viên không tồn tại.'], 404);
-        // }
+            // Nếu là mảng (checkbox), giữ nguyên
+            if (is_array($value)) {
+                $value = json_encode($value); // hoặc serialize nếu bạn lưu chuỗi
+            }
 
-        // Tìm biểu mẫu
-        try {
-            $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['message' => 'Biểu mẫu không tìm thấy.'], 404);
-        }
-
-        // 2. Sử dụng Database Transaction để đảm bảo tính nguyên tử
-        DB::beginTransaction();
-        try {
-            // Tạo bản ghi gửi biểu mẫu chính
-            $submission = FormRequest::create([
-                'type_of_form_id' => $formId,
-                // Thêm student_code vào FormRequest nếu cần để dễ truy vấn
-                'student_code' => $studentCode,
+            FormRequestValue::create([
+                'form_request_id' => $submission->id,
+                'field_form_id' => $field->id,
+                'value' => $value,
             ]);
-
-            $formRequestValues = [];
-            foreach ($form->fieldForm as $field) {
-                $fieldKey = $field->id;
-
-                // Lấy giá trị từ inputValues, nếu không có thì mặc định là null hoặc chuỗi rỗng
-                // Tùy thuộc vào yêu cầu của từng trường (có thể kiểm tra 'required' ở validation)
-                $value = $inputValues[$fieldKey] ?? null;
-
-                // Nếu bạn muốn chỉ lưu các trường có giá trị được gửi lên
-                if ($value !== null) { // Hoặc dùng !empty($value) tùy vào logic của bạn
-                    $formRequestValues[] = [
-                        'form_request_id' => $submission->id,
-                        'field_form_id' => $field->id,
-                        'student_code' => $studentCode, // Nên lưu student_code ở đây để dễ truy vấn
-                        'value' => $value,
-                        'created_at' => now(), // Thêm timestamps thủ công cho bulk insert
-                        'updated_at' => now(),
-                    ];
-                }
-            }
-
-            // 3. Tối ưu hiệu suất với Bulk Insert
-            if (!empty($formRequestValues)) {
-                FormRequestValue::insert($formRequestValues);
-            }
-
-            DB::commit(); // Hoàn tất giao dịch
-
-            return response()->json(['message' => 'Gửi biểu mẫu thành công!']);
-        } catch (\Exception $e) {
-            DB::rollBack(); // Hoàn tác giao dịch nếu có lỗi
-            \Log::error("Lỗi khi gửi biểu mẫu: " . $e->getMessage(), ['exception' => $e]);
-            return response()->json(['message' => 'Đã xảy ra lỗi khi xử lý biểu mẫu. Vui lòng thử lại sau.'], 500);
         }
     }
+
+    return response()->json(['message' => 'Gửi biểu mẫu thành công!']);
+}
+
+public function updateDataForm(Request $request, $formId)
+{
+    // Lấy form từ DB
+    $form = TypeOfForm::with('fieldForm')->findOrFail($formId);
+
+    // Lấy ID bản ghi submission cần update
+    $formRequestId = $request->input('form_request_id');
+    if (!$formRequestId) {
+        return response()->json(['message' => 'Thiếu form_request_id'], 400);
+    }
+
+    // Lấy mảng giá trị từ request
+    $items = $request->input('values');
+
+    foreach ($form->fieldForm as $field) {
+        $fieldKey = $field->id;
+
+        if (array_key_exists($fieldKey, $items)) {
+            $value = $items[$fieldKey];
+
+            // Nếu là mảng (checkbox), mã hóa JSON
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
+
+            // Cập nhật hoặc tạo mới bản ghi value
+            FormRequestValue::updateOrCreate(
+                [
+                    'form_request_id' => $formRequestId,
+                    'field_form_id' => $field->id,
+                ],
+                [
+                    'value' => $value,
+                ]
+            );
+        }
+    }
+
+    return response()->json(['message' => 'Cập nhật biểu mẫu thành công!']);
+}
+
 
 
     public function previewForm($id)

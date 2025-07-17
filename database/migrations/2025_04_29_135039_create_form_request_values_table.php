@@ -21,13 +21,8 @@ return new class extends Migration
                 ->constrained('field_forms')
                 ->onDelete('cascade');
 
-
-            $table->string('student_code');
             // Nếu muốn tạo liên kết thủ công (không bắt buộc nhưng tốt để đảm bảo toàn vẹn)
-            $table->foreign('student_code')
-                ->references('student_code')
-                ->on('students')
-                ->onDelete('cascade');
+            $table->string('student_code');
 
             $table->json('value')->nullable(); // Dữ liệu nhập từ người dùng
             $table->timestamps();

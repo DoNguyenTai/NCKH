@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('type_of_form_id')
                   ->constrained('type_of_forms')
                   ->onDelete('cascade');
+            $table->string('student_code');
+            $table->string('status');
             $table->timestamps();
         });
     }

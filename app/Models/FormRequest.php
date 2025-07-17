@@ -11,6 +11,8 @@ class FormRequest extends Model
 
     protected $fillable = [
         'type_of_form_id',
+        'student_code',
+        'status',
 
     ];
 

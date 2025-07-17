@@ -119,6 +119,7 @@ Route::get('/form-value-detail/{studentCode}/{formRequestId}', [FormCustomContro
 
 
 Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
+Route::put('/update-data-form/{formId}', [FormCustomController::class, 'updateDataForm']);
 Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
 Route::post('/create-form', [FormController::class, 'storeForm']);
 Route::delete('/forms/{id}', [FormController::class, 'deleteForm']);
