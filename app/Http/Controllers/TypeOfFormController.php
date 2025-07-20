@@ -58,4 +58,35 @@ class TypeOfFormController extends Controller
 
         return response()->json(['message' => 'Form deleted successfully.']);
     }
+
+    public function getPdfUrl($id)
+    {
+        $form = TypeOfForm::findOrFail($id);
+
+        if (!$form->pdf) {
+            return response()->json(['error' => 'PDF not found'], 404);
+        }
+
+        $url = asset('storage/pdfs/' . $form->pdf);
+
+        return response()->json(['url' => $url]);
+    }
+
+    // Trả về URL download file Word
+  public function getWordUrl($id)
+{
+    $form = TypeOfForm::findOrFail($id);
+
+    if (!$form->word) {
+        return response()->json(['error' => 'Word file not found'], 404);
+    }
+
+    $filePath = storage_path('app/public/original/' . $form->word);
+
+    if (!file_exists($filePath)) {
+        return response()->json(['error' => 'File does not exist'], 404);
+    }
+
+    return response()->download($filePath, $form->word);
+}
 }

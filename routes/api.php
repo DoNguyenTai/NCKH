@@ -171,6 +171,10 @@ Route::get('/student/search/{student_code}', [StudentController::class, 'searchB
 
 Route::apiResource('folder', FolderController::class);
 Route::apiResource('type-of-forms', TypeOfFormController::class);
+Route::get('type-of-forms/pdf/{id}', [TypeOfFormController::class,'getPdfUrl']);
+Route::get('type-of-forms/word/{id}', [TypeOfFormController::class,'getWordUrl']);
+
+
 Route::apiResource('notes', NoteController::class);
 Route::get('notes/showParent/{folder_id}',[NoteController::class,'showIdFolder']);
 
