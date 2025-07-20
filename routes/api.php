@@ -7,6 +7,7 @@ use App\Http\Controllers\DocxController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\GoogleDriveController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
@@ -43,7 +44,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Đăng xuất
     Route::post('/logout', [AuthController::class, 'logout']);
-
 });
 Route::post('/send-email', [MailController::class, 'send']);
 Route::post('/send-email-student', [MailController::class, 'sendMultipleByStudentCode']);
@@ -152,9 +152,13 @@ Route::get('/google-drive/auth-url', [GoogleDriveController::class, 'redirectToG
 Route::get('/google-drive/callback', [GoogleDriveController::class, 'handleGoogleCallback']);
 Route::get('/google-drive/list', [GoogleDriveController::class, 'listFiles']);
 Route::post('/google-drive/download-pdf', [GoogleDriveController::class, 'downloadPdf']);
+Route::get('/google-drive/export-html', [GoogleDriveController::class, 'exportHtml']);
+Route::get('/google-drive/export-pdf', [GoogleDriveController::class, 'exportPdfUrl']);
 
-Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);
+// Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);
 Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']);
+
+Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxFromClient']);
 
 Route::get('/google-drive/generate-upload/{studentCode}/{formRequestId}', [GoogleDriveController::class, 'generateThenUpload']);
 
@@ -167,6 +171,8 @@ Route::get('/student/search/{student_code}', [StudentController::class, 'searchB
 
 Route::apiResource('folder', FolderController::class);
 Route::apiResource('type-of-forms', TypeOfFormController::class);
+Route::apiResource('notes', NoteController::class);
+Route::get('notes/showParent/{folder_id}',[NoteController::class,'showIdFolder']);
 
 Route::apiResource('request-students', RequestStudentController::class);
 Route::post('/request-students/bulk-update-status', [RequestStudentController::class, 'bulkUpdateStatus']);

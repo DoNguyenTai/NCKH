@@ -18,6 +18,11 @@ class Folder extends Model
         return $this->hasMany(TypeOfForm::class, 'parent_id');
     }
 
+     public function note()
+    {
+        return $this->hasMany(Note::class, 'parent_id');
+    }
+
        public function resquestStuden()
     {
         return $this->hasMany(RequestStudent::class);

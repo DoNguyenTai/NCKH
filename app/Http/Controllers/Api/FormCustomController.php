@@ -9,7 +9,10 @@ use App\Models\FormRequestValue;
 use App\Models\TypeOfForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class FormCustomController extends Controller
 {
@@ -29,11 +32,47 @@ class FormCustomController extends Controller
 
     public function storeField(Request $request, $formId)
     {
+        \Log::info('test' . $request);
+        // Lưu file Word
+        $file = $request->file('doc_file');
+        if (!$file) {
+            return response()->json(['error' => 'Missing Word file'], 400);
+        }
 
+        $docFileName = 'doc_' . time() . '_' . $file->getClientOriginalName();
+        $docPath = $file->storeAs('public/original', $docFileName);
+        $fullDocPath = storage_path('app/' . $docPath);
+
+        // Tải PDF từ URL
+        $pdfUrl = $request->input('url_pdf');
+        if (!$pdfUrl) {
+            return response()->json(['error' => 'Missing url_pdf'], 400);
+        }
+
+        $response = Http::withOptions(['verify' => false])->get($pdfUrl);
+        if (!$response->ok()) {
+            \Log::error("Failed to download PDF from: $pdfUrl");
+            return response()->json(['error' => 'Failed to download PDF'], 500);
+        }
+
+        $pdfFileName = 'pdf_' . time() . '_' . Str::random(6) . '.pdf';
+        $pdfPath = 'pdfs/' . $pdfFileName;
+        Storage::disk('public')->put($pdfPath, $response->body());
+        \Log::info("PDF saved to: $pdfPath");
+
+        // Cập nhật thông tin file trong bảng type_of_forms
+        $typeofform = TypeOfForm::find($formId);
+        if ($typeofform) {
+            $typeofform->pdf = $pdfFileName;
+            $typeofform->word = $docFileName;
+            $typeofform->save();
+        }
+
+        // Thêm các field vào form
         $maxOrder = FieldForm::where('form_id', $formId)->max('order') ?? 0;
+        $fields = json_decode($request->input('fields'), true);
 
-        foreach ($request->fields as $field) {
-
+        foreach ($fields as $field) {
             $exists = FieldForm::where('form_id', $formId)
                 ->where('label', $field['label'])
                 ->exists();
@@ -254,7 +293,7 @@ class FormCustomController extends Controller
     {
         $query = FormRequest::whereHas('values', function ($q) use ($studentCode, $createdAt) {
             $q->where('student_code', $studentCode);
-            
+
             // Lọc theo ngày trong bảng values
             if ($createdAt) {
                 $q->whereDate('created_at', $createdAt);

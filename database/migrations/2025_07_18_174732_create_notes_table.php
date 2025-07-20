@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('type_of_forms', function (Blueprint $table) {
+        Schema::create('notes', function (Blueprint $table) {
             $table->id();
-            $table->string("name");
-            $table->longText("form_model")->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('folders')->onDelete('cascade');
-            $table->longText("pdf")->nullable();
-            $table->longText("word")->nullable();
+            $table->string('name');
+            $table->longText('content')->nullable();;
+             $table->foreignId('parent_id')->nullable()->constrained('folders')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('type_of_forms');
+        Schema::dropIfExists('notes');
     }
 };

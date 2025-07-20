@@ -9,9 +9,10 @@ use Google_Service_Drive;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\TemplateProcessor;
-
+use Illuminate\Support\Facades\Http;
 use ZipArchive; // Import ZipArchive
 use Carbon\Carbon; // Import Carbon (nếu bạn sử dụng Carbon::now())
+use Illuminate\Support\Str;
 class GoogleDriveController extends Controller
 {
     private function getClient(): Google_Client
@@ -246,21 +247,21 @@ class GoogleDriveController extends Controller
             return response()->json(['error' => 'Chưa xác thực Google'], 401);
         }
 
-          try {
+        try {
             $driveService = new \Google_Service_Drive($client);
 
             $fileMetadata = new \Google_Service_Drive_DriveFile([
                 'name' => 'Generated_' . time() . '.docx',
-                'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'mimeType' => 'application/vnd.google-apps.document'
                 // 'parents' => ['YOUR_FOLDER_ID'] // nếu muốn upload vào thư mục cụ thể
             ]);
 
             // Lấy nội dung file từ Storage
-          $fileContents = file_get_contents($filePath);
-            \Log::info(  $fileContents);
+            $fileContents = file_get_contents($filePath);
+            \Log::info($fileContents);
             $uploadedFile = $driveService->files->create($fileMetadata, [
                 'data' => $fileContents,
-                'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'mimeType' => 'application/vnd.google-apps.document',
                 'uploadType' => 'multipart',
                 'fields' => 'id,webViewLink'
             ]);
@@ -325,7 +326,7 @@ class GoogleDriveController extends Controller
         if (!$filePath) {
             return response()->json(['error' => 'Tạo file thất bại'], 500);
         }
-        \Log::info($filePath );
+        \Log::info($filePath);
         return $this->uploadDocxToDriveFromPath($filePath);
     }
 
@@ -352,4 +353,146 @@ class GoogleDriveController extends Controller
         $templateProcessor->saveAs($outputPath);
         return $outputPath;
     }
+
+
+    public function exportHtml(Request $request)
+    {
+        $client = $this->getAuthenticatedClient();
+        if (!$client) {
+            return response()->json(['error' => 'Authentication required'], 401);
+        }
+
+        try {
+            $fileId = $request->input('fileId');
+            if (empty($fileId)) {
+                return response()->json(['error' => 'Missing fileId parameter'], 400);
+            }
+
+            $driveService = new Google_Service_Drive($client);
+
+            // Sử dụng Files::export để lấy nội dung HTML
+            // 'text/html' là MIME type cho HTML
+            $response = $driveService->files->export($fileId, 'text/html', ['alt' => 'media']);
+
+            // Trả về nội dung HTML trực tiếp
+            return response($response->getBody(), 200, [
+                'Content-Type' => 'text/html',
+                'Content-Disposition' => 'inline; filename="exported_document.html"', // Gợi ý tên file khi lưu
+            ]);
+        } catch (\Google\Service\Exception $e) {
+            // Xử lý các lỗi cụ thể từ Google API
+            Log::error('Google Drive API Error (exportHtml): ' . $e->getMessage());
+            return response()->json(['error' => 'Google Drive API error: ' . $e->getMessage()], $e->getCode());
+        } catch (\Exception $e) {
+            // Xử lý các lỗi chung khác
+            Log::error('General Error (exportHtml): ' . $e->getMessage());
+            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+
+    public function uploadDocxFromClient(Request $request)
+    {
+        if (!$request->hasFile('docx_file')) {
+            return response()->json(['error' => 'Chưa chọn file'], 400);
+        }
+
+        $file = $request->file('docx_file');
+
+        if (!$file->isValid()) {
+            return response()->json(['error' => 'File không hợp lệ'], 400);
+        }
+
+        $client = $this->getAuthenticatedClient(); // Hàm bạn đã viết để lấy Google_Client
+        if (!$client) {
+            return response()->json(['error' => 'Chưa xác thực Google'], 401);
+        }
+
+        try {
+            $driveService = new \Google_Service_Drive($client);
+
+            $fileMetadata = new \Google_Service_Drive_DriveFile([
+                'name' => $file->getClientOriginalName(), // Tên gốc
+                'mimeType' => 'application/vnd.google-apps.document'
+            ]);
+
+            $uploadedFile = $driveService->files->create($fileMetadata, [
+                'data' => file_get_contents($file->getRealPath()),
+                'mimeType' => 'application/vnd.google-apps.document',
+                'uploadType' => 'multipart',
+                'fields' => 'id,webViewLink'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã upload file lên Google Drive',
+                'url' => $uploadedFile->webViewLink,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Upload thất bại: ' . $e->getMessage());
+            return response()->json(['error' => 'Upload thất bại', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+   public function exportPdfUrl(Request $request)
+{
+    $client = $this->getAuthenticatedClient();
+    if (!$client) {
+        return response()->json(['error' => 'Authentication required'], 401);
+    }
+
+    try {
+        $fileId = $request->input('fileId');
+        if (empty($fileId)) {
+            return response()->json(['error' => 'Missing fileId parameter'], 400);
+        }
+
+        $service = new \Google_Service_Drive($client);
+        $file = $service->files->get($fileId, ['fields' => 'mimeType, name']);
+
+        $mimeType = $file->getMimeType();
+        $exportableTypes = [
+            'application/vnd.google-apps.document',
+            'application/vnd.google-apps.spreadsheet',
+            'application/vnd.google-apps.presentation',
+        ];
+
+        if (!in_array($mimeType, $exportableTypes)) {
+            return response()->json(['error' => 'This file type cannot be exported to PDF'], 400);
+        }
+
+        // Cấp quyền công khai để có thể export
+        $permission = new \Google_Service_Drive_Permission([
+            'type' => 'anyone',
+            'role' => 'reader',
+        ]);
+        $service->permissions->create($fileId, $permission, ['fields' => 'id']);
+
+        // Tạo link export PDF
+        $pdfUrl = "https://docs.google.com/document/d/{$fileId}/export?format=pdf";
+        $fileName = Str::slug($file->getName()) . '.pdf';
+
+        // Tải file PDF từ Google Drive
+        $response = Http::withOptions(['verify' => false])->get($pdfUrl);
+
+        if (!$response->ok()) {
+            return response()->json(['error' => 'Failed to download PDF'], 500);
+        }
+
+        // Lưu file vào storage/app/public/pdfs
+        $path = 'pdfs/' . $fileName;
+        Storage::disk('public')->put($path, $response->body());
+
+        // Trả về link Google Drive và link tải từ server
+        return response()->json([
+            'pdf_url' => $pdfUrl,
+            'file_name' => $fileName,
+            // 'download_url' => asset('storage/' . $path),
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('exportPdfUrl error: ' . $e->getMessage());
+        return response()->json(['error' => 'Unexpected error: ' . $e->getMessage()], 500);
+    }
+}
 }

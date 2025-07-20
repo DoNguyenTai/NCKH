@@ -31,4 +31,10 @@ class FolderController extends Controller
         $folder->delete();
         return response()->json(['message' => 'Deleted']);
     }
+        public function show($id)
+    {
+        $folder = Folder::findOrFail($id);
+       
+        return response()->json($folder,200);
+    }
 }
