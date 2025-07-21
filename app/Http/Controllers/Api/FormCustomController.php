@@ -264,7 +264,7 @@ class FormCustomController extends Controller
                 'values' => function ($query) use ($studentCode) {
                     $query->where('student_code', $studentCode);
                 },
-                'values.field',   // load quan hệ field cho từng value
+                // 'values.field',   // load quan hệ field cho từng value
                 'formType.folder'        // load loại biểu mẫu
             ])
             ->get();

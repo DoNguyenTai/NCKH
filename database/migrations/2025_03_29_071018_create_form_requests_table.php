@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('type_of_form_id')
                   ->constrained('type_of_forms')
                   ->onDelete('cascade');
+            $table->longText("url_docx")->nullable();      
+            $table->longText("file_docx")->nullable();      
+            $table->string("status")->nullable();      
             $table->timestamps();
         });
     }

@@ -10,7 +10,7 @@ class FormRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'type_of_form_id',
+        'type_of_form_id','url_docx','file_docx','status'
 
     ];
 

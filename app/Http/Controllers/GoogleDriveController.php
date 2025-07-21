@@ -281,22 +281,19 @@ class GoogleDriveController extends Controller
 
 
 
-    public function generateThenUpload($studentCode, $formRequestId)
+    public function generateThenUpload($formRequestId)
     {
         // B1: Lấy thông tin form + values
         $form = FormRequest::where('id', $formRequestId)
-            ->whereHas('values', function ($query) use ($studentCode) {
-                $query->where('student_code', $studentCode);
-            })
+            // ->whereHas('values', function ($query) use ($studentCode) {
+            //     $query->where('student_code', $studentCode);
+            // })
             ->with([
-                'values' => function ($query) use ($studentCode) {
-                    $query->where('student_code', $studentCode);
-                },
                 'values.field',
                 'formType.folder'
             ])
             ->first();
-
+            \Log::info($form->toArray());
         if (!$form) {
             return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
         }
@@ -353,6 +350,7 @@ class GoogleDriveController extends Controller
         $templateProcessor->saveAs($outputPath);
         return $outputPath;
     }
+
 
 
     public function exportHtml(Request $request)

@@ -13,9 +13,11 @@ use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TypeOfFormController;
+use App\Http\Controllers\FormRequestController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -160,7 +162,7 @@ Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']
 
 Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxFromClient']);
 
-Route::get('/google-drive/generate-upload/{studentCode}/{formRequestId}', [GoogleDriveController::class, 'generateThenUpload']);
+Route::get('/google-drive/generate-upload/{formRequestId}', [GoogleDriveController::class, 'generateThenUpload']);
 
 
 Route::get('/scrape-element', [\App\Http\Controllers\ScrapeController::class, 'scrapeElement']);
@@ -181,3 +183,13 @@ Route::get('notes/showParent/{folder_id}',[NoteController::class,'showIdFolder']
 Route::apiResource('request-students', RequestStudentController::class);
 Route::post('/request-students/bulk-update-status', [RequestStudentController::class, 'bulkUpdateStatus']);
 Route::get('/request-students/search/{student_code}', [RequestStudentController::class, 'searchByStudentCode']);
+
+
+
+Route::prefix('form-requests')->group(function () {
+    Route::get('/', [FormRequestController::class, 'index']);
+    Route::post('/', [FormRequestController::class, 'store']);
+    Route::get('{id}', [FormRequestController::class, 'show']);
+    Route::put('{id}', [FormRequestController::class, 'update']);
+    Route::delete('{id}', [FormRequestController::class, 'destroy']);
+});
