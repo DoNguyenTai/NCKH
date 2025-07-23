@@ -32,7 +32,7 @@ class FormCustomController extends Controller
 
     public function storeField(Request $request, $formId)
     {
-        \Log::info('test' . $request);
+        Log::info('test' . $request);
         // Lưu file Word
         $file = $request->file('doc_file');
         if (!$file) {
@@ -217,7 +217,7 @@ class FormCustomController extends Controller
                         'form_request_id' => $submission->id,
                         'field_form_id' => $field->id,
                         'student_code' => $studentCode, // Nên lưu student_code ở đây để dễ truy vấn
-                        'value' => $value,
+                        'value' => json_encode($value, JSON_UNESCAPED_UNICODE),
                         'created_at' => now(), // Thêm timestamps thủ công cho bulk insert
                         'updated_at' => now(),
                     ];
