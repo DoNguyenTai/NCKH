@@ -13,16 +13,19 @@ class NotifyUserMail extends Mailable
 {
     use Queueable, SerializesModels;
     public $data;
+     public $customSubject;
     /**
      * Create a new message instance.
      */
-    public function __construct($data) {
+    public function __construct($data,$customSubject) {
         $this->data = $data;
+        $this->customSubject=$customSubject;
+        
     }
 
 
     public function build() {
-        return $this->subject('Thông báo từ hệ thống')
+        return $this->subject($this->customSubject)
                     ->view('emails.notify');
     }
     /**

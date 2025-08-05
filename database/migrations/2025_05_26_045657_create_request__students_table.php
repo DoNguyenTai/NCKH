@@ -13,17 +13,18 @@ return new class extends Migration
     {
         Schema::create('request_students', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('student_id');
-            $table->unsignedBigInteger('request_type_id');
-  
-            $table->date('start_date')->nullable();
-            $table->date('end_date')->nullable();
-            $table->string('status')->default('pending'); // pending, approved, rejected
-            $table->text('note')->nullable();
-            $table->timestamps();
 
-            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
-            $table->foreign('request_type_id')->references('id')->on('request_types')->onDelete('cascade');
+            $table->timestamps();
+            $table->foreignId('folder_id')
+                ->constrained('folders')
+                ->onDelete('cascade');
+            $table->string('student_code');
+            $table->string('status');
+
+            $table->foreign('student_code')
+                ->references('student_code')
+                ->on('students')
+                ->onDelete('cascade');
         });
     }
 

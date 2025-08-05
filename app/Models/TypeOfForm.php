@@ -10,7 +10,9 @@ class TypeOfForm extends Model
     use HasFactory;
     protected $fillable = [
         'name',
-        'form-model',
+        'form_model',
+        'parent_id',
+        'note',
     ];
 
     public function fieldForm()
@@ -18,12 +20,17 @@ class TypeOfForm extends Model
         return $this->hasMany(FieldForm::class, 'form_id');
     }
 
-    public function formRequest() {
+    public function formRequest()
+    {
         return $this->hasMany(FormRequest::class, 'type_of_form_id');
     }
 
     public function dependencyForm()
     {
         return $this->hasMany(DependencyForm::class, 'form_id');
+    }
+    public function folder()
+    {
+        return $this->belongsTo(Folder::class, 'parent_id');
     }
 }

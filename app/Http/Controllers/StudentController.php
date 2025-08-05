@@ -29,7 +29,6 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id|unique:students,user_id',
             'student_code' => 'required|string|unique:students,student_code',
             'name' => 'required|string|max:255',
             'dob' => 'nullable|date',
@@ -105,5 +104,15 @@ class StudentController extends Controller
         }
 
         return response()->json($query->get());
+    }
+    public function searchByStudentCode($student_code)
+    {
+        $students = Student::where('student_code', 'like', '%' . $student_code . '%')->get();
+
+        if ($students->isEmpty()) {
+            return response()->json(['message' => 'Không tìm thấy sinh viên nào'], 404);
+        }
+
+        return response()->json($students);
     }
 }

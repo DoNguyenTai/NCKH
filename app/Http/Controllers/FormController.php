@@ -116,12 +116,12 @@ class FormController extends Controller
     public function storeFormModel(Request $request, $id)
     {
         // $form_name = $request->input("name");
-        $form_model = $request->input("form-model");
+        $form_model = $request->input("form_model");
         $form = TypeOfForm::find($id);
         $form->fieldForm()->delete();
-        self::deleteUploadedDocx($form['form-model']);
+        self::deleteUploadedDocx($form['form_model']);
         $data = $form->update([
-            'form-model' => $form_model
+            'form_model' => $form_model
         ]);
         return response()->json($data, 200);
     }
@@ -146,7 +146,7 @@ class FormController extends Controller
 
         $form =  TypeOfForm::find($id);
         $form->fieldForm()->delete();
-        $this->deleteUploadedDocx($form['form-model']);
+        $this->deleteUploadedDocx($form['form_model']);
         $form->delete();
         return response()->json($form, 200);
     }
@@ -206,4 +206,9 @@ class FormController extends Controller
             }),
         ]);
     }
+
+
+
+    // form_resquest
+    
 }

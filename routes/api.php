@@ -4,14 +4,28 @@ use App\Http\Controllers\Api\FormCustomController;
 use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocxController;
+use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\GoogleDriveController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\TemplateController;
+// <<<<<<< Updated upstream
+use App\Http\Controllers\TypeOfFormController;
+use App\Http\Controllers\FormRequestController;
+
+
+
+// =======
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
+use Illuminate\Session\Middleware\StartSession;
+use Laravel\Jetstream\Http\Livewire\Profile\ShowProfile;
 
+// >>>>>>> Stashed changes
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -24,24 +38,24 @@ use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
 */
 
 
-Route::get("/get", [TemplateController::class, 'index']);
-Route::get("/get/{id}", [TemplateController::class, 'show']);
-Route::post("/post", [TemplateController::class, 'store']);
-
-Route::middleware('auth:sanctum')->group(function () {
+// Route::get("/get", [TemplateController::class, 'index']);
+// Route::get("/get/{id}", [TemplateController::class, 'show']);
+// Route::post("/post", [TemplateController::class, 'store']);
+// 
+Route::middleware(['auth:sanctum'])->group(function () {
     // Lấy thông tin user đã đăng nhập
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return response()->json($request->user());
     });
 
-    // Ví dụ API lấy profile user
+    // API lấy profile user (controller tự viết)
     Route::get('/profile', [UserProfileController::class, 'show']);
 
     // Đăng xuất
     Route::post('/logout', [AuthController::class, 'logout']);
-
-     Route::post('/send-email', [MailController::class, 'send']);
 });
+Route::post('/send-email', [MailController::class, 'send']);
+Route::post('/send-email-student', [MailController::class, 'sendMultipleByStudentCode']);
 
 // API đăng nhập, đăng ký không cần auth
 Route::post('/login', [AuthController::class, 'login']);
@@ -75,13 +89,7 @@ Route::prefix('request-students')->group(function () {
     Route::get('/student/{student_id}', [RequestStudentController::class, 'showByStudentId']);
     Route::get('/request-type/{request_type_id}', [RequestStudentController::class, 'showByRequestTypeId']);
 });
-Route::prefix('students')->group(function () {
-    Route::get('/', [StudentController::class, 'index']);
-    Route::post('/', [StudentController::class, 'store']);
-    Route::get('/{id}', [StudentController::class, 'show']);
-    Route::put('/{id}', [StudentController::class, 'update']);
-    Route::delete('/{id}', [StudentController::class, 'destroy']);
-});
+
 
 Route::prefix('request-types')->group(function () {
     Route::get('/', [RequestTypeController::class, 'index']);
@@ -109,8 +117,17 @@ Route::prefix('admin')->group(function () {
     Route::post('/create-layout-form/{id}', [FormController::class, 'storeFormModel'])->name('storeFormModel');
     Route::get('/show-layout-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
 });
+
 Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
 Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
+Route::get('/form-value', [FormCustomController::class, 'getAllFormValue']);
+Route::get('/form-value/{studentCode}', [FormCustomController::class, 'getAllFormValueByTemplate']);
+Route::get('/form-values/{studentCode}/{folderId}/{createdAt?}', [FormCustomController::class, 'getAllFormValueByTemplateByFolderWithDate']);
+Route::get('/form-value-folder/{studentCode}/{id}', [FormCustomController::class, 'getAllFormValueByTemplateByFolder']);
+
+Route::get('/form-value-detail/{studentCode}/{formRequestId}', [FormCustomController::class, 'getFormValueDetail']);
+
+
 Route::post('/submit-form/{formId}', [FormCustomController::class, 'submitForm']);
 Route::get('/preview-form/{formRequestId}', [FormCustomController::class, 'previewForm']);
 Route::post('/create-form', [FormController::class, 'storeForm']);
@@ -140,3 +157,55 @@ Route::get('/docx-to-html/{filename}', [DocxController::class, 'convertDocxToHtm
 
 
 
+
+Route::get('/google-drive/auth-url', [GoogleDriveController::class, 'redirectToGoogleAuth']);
+Route::get('/google-drive/callback', [GoogleDriveController::class, 'handleGoogleCallback']);
+Route::get('/google-drive/list', [GoogleDriveController::class, 'listFiles']);
+Route::post('/google-drive/download-pdf', [GoogleDriveController::class, 'downloadPdf']);
+Route::get('/google-drive/export-html', [GoogleDriveController::class, 'exportHtml']);
+Route::get('/google-drive/export-pdf', [GoogleDriveController::class, 'exportPdfUrl']);
+
+
+Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']);
+
+Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxFromClient']);
+
+Route::get('/google-drive/generate-upload/{formRequestId}', [GoogleDriveController::class, 'generateThenUpload']);
+
+
+Route::get('/scrape-element', [\App\Http\Controllers\ScrapeController::class, 'scrapeElement']);
+
+Route::apiResource('student', StudentController::class);
+Route::get('/student/search/{student_code}', [StudentController::class, 'searchByStudentCode']);
+
+
+Route::apiResource('folder', FolderController::class);
+Route::apiResource('type-of-forms', TypeOfFormController::class);
+Route::get('type-of-forms/pdf/{id}', [TypeOfFormController::class, 'getPdfUrl']);
+Route::get('type-of-forms/word/{id}', [TypeOfFormController::class, 'getWordUrl']);
+
+
+Route::apiResource('notes', NoteController::class);
+Route::get('notes/showParent/{folder_id}', [NoteController::class, 'showIdFolder']);
+
+Route::apiResource('request-students', RequestStudentController::class);
+Route::post('/request-students/bulk-update-status', [RequestStudentController::class, 'bulkUpdateStatus']);
+Route::get('/request-students/search/{student_code}', [RequestStudentController::class, 'searchByStudentCode']);
+
+
+
+Route::prefix('form-requests')->group(function () {
+    Route::get('/', [FormRequestController::class, 'index']);
+    Route::post('/', [FormRequestController::class, 'store']);
+    Route::get('/{id}', [FormRequestController::class, 'show']);
+    Route::put('{id}', [FormRequestController::class, 'update']);
+    Route::delete('{id}', [FormRequestController::class, 'destroy']);
+    Route::get('/{id}/created-file', [FormRequestController::class, 'generateThenUpload']);
+    Route::get('/{filename}/get-file', [FormRequestController::class, 'getDownloadUrlByFilename']);
+});
+
+// Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);
+// Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']);
+
+
+// Route::get('/scrape-element', [\App\Http\Controllers\ScrapeController::class, 'scrapeElement']);

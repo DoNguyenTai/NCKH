@@ -7,13 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class FormRequestValue extends Model
 {
-    protected $fillable = ['form_request_id', 'field_form_id', 'value'];
 
     use HasFactory;
-
+    protected $fillable = [
+        'form_request_id',
+        'field_form_id',
+        'student_code',
+        'value',
+    ];
     public function submission()
     {
-        return $this->belongsTo(FormRequest::class);
+        return $this->belongsTo(FormRequest::class,'form_request_id');
     }
 
     public function field()
@@ -23,4 +27,9 @@ class FormRequestValue extends Model
     protected $casts = [
         'value' => 'array', // Tự động decode khi lấy ra
     ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_code', 'student_code');
+    }
 }

@@ -10,8 +10,8 @@ class FormRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'type_of_form_id',
-        
+        'type_of_form_id','url_docx','file_docx','status'
+
     ];
 
     public function values()
@@ -23,5 +23,8 @@ class FormRequest extends Model
     {
         return $this->belongsTo(TypeOfForm::class, 'type_of_form_id');
     }
-
+    public function requestStudents()
+    {
+        return $this->hasMany(RequestStudent::class);
+    }
 }

@@ -25,9 +25,11 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'password' => Hash::make($request->password),
+
+
         ]);
         $user->assignRole('user'); // hoặc 'admin'
-
+        $user->load('roles');
 
         return response()->json(['message' => 'User registered successfully', 'user' => $user], 201);
     }
@@ -48,11 +50,18 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('api-token')->plainTextToken;
+        // $user = Auth::user()->load('roles'); // 👈 thêm load
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
+
             'user' => $user,
+            'roles' => $user->getRoleNames(),
+// =======
+//             'user' => $user->name,
+//             'roles' => $user->roles->pluck('name'),
+// >>>>>>> Stashed changes
         ]);
     }
 
@@ -63,5 +72,9 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Đã đăng xuất']);
+    }
+    public function getUser(){
+       
+        return  User::all();
     }
 }

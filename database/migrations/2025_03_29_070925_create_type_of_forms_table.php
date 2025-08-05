@@ -9,12 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void  
+    public function up(): void
     {
         Schema::create('type_of_forms', function (Blueprint $table) {
             $table->id();
             $table->string("name");
-            $table->longText("form-model")->nullable();
+            $table->longText("form_model")->nullable();
+            $table->foreignId('parent_id')->nullable()->constrained('folders')->onDelete('cascade');
+            $table->longText("pdf")->nullable();
+            $table->longText("word")->nullable();
+            $table->longText("note")->nullable();
             $table->timestamps();
         });
     }

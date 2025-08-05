@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
             $table->string('student_code')->unique(); // mã học sinh duy nhất
+
             $table->string('name');
             $table->date('dob')->nullable(); // ngày sinh có thể để null
             $table->string('class')->nullable();
