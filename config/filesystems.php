@@ -39,7 +39,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -55,7 +55,16 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
-
+        'google' => [
+            'driver' => 'google',
+            'type' => 'Google', // RẤT QUAN TRỌNG: Gói masbug yêu cầu 'type' là 'Google'
+            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'), // ID của thư mục gốc trên Drive (tùy chọn)
+            'allow_parents_unrestricted' => true, // Cho phép tạo file trong thư mục không thuộc ứng dụng (tùy chọn)
+            // 'serviceAccountJson' => storage_path('app/google-drive-credentials.json'), // Tùy chọn nếu dùng Service Account
+        ],
     ],
 
     /*

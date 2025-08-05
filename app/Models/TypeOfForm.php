@@ -12,6 +12,7 @@ class TypeOfForm extends Model
         'name',
         'form_model',
         'parent_id',
+        'note',
     ];
 
     public function fieldForm()

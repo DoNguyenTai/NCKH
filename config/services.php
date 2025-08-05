@@ -31,9 +31,19 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
     'google' => [
+        // <<<<<<< Updated upstream
         'clientId' => env('GOOGLE_CLIENT_ID'),
         'clientSecret' => env('GOOGLE_CLIENT_SECRET'),
         'redirectUri' => env('GOOGLE_REDIRECT_URI'),
+        // =======
+
+        //         'clientId' => env('GOOGLE_CLIENT_ID'),
+        //         'clientSecret' => env('GOOGLE_CLIENT_SECRET'),
+        'refreshToken' => env('GOOGLE_REFRESH_TOKEN'),
+        // 'redirectUri' => env('GOOGLE_REDIRECT_URI'),
+                'folderId' => env('GOOGLE_FOLDER_ID'), // ID của thư mục gốc trên Drive (tùy chọn)
+
+        // >>>>>>> Stashed changes
     ],
 
 ];

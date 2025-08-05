@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()->constrained('folders')->onDelete('cascade');
             $table->longText("pdf")->nullable();
             $table->longText("word")->nullable();
+            $table->longText("note")->nullable();
             $table->timestamps();
         });
     }

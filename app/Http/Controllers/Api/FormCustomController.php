@@ -18,7 +18,7 @@ class FormCustomController extends Controller
 {
     public function getTypeOfForms()
     {
-        return response()->json(TypeOfForm::all());
+        return response()->json(TypeOfForm::with('folder')->get());
     }
 
     public function getFormWithFields($formId)
@@ -32,7 +32,7 @@ class FormCustomController extends Controller
 
     public function storeField(Request $request, $formId)
     {
-        Log::info('test' . $request);
+        \Log::info('test' . $request);
         // Lưu file Word
         $file = $request->file('doc_file');
         if (!$file) {

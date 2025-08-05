@@ -12,13 +12,20 @@ use App\Http\Controllers\RequestStudentController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TemplateController;
+// <<<<<<< Updated upstream
 use App\Http\Controllers\TypeOfFormController;
 use App\Http\Controllers\FormRequestController;
+
+
+
+// =======
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
+use Illuminate\Session\Middleware\StartSession;
+use Laravel\Jetstream\Http\Livewire\Profile\ShowProfile;
 
-
+// >>>>>>> Stashed changes
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -31,17 +38,17 @@ use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
 */
 
 
-Route::get("/get", [TemplateController::class, 'index']);
-Route::get("/get/{id}", [TemplateController::class, 'show']);
-Route::post("/post", [TemplateController::class, 'store']);
-
-Route::middleware('auth:sanctum')->group(function () {
+// Route::get("/get", [TemplateController::class, 'index']);
+// Route::get("/get/{id}", [TemplateController::class, 'show']);
+// Route::post("/post", [TemplateController::class, 'store']);
+// 
+Route::middleware(['auth:sanctum'])->group(function () {
     // Lấy thông tin user đã đăng nhập
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return response()->json($request->user());
     });
 
-    // Ví dụ API lấy profile user
+    // API lấy profile user (controller tự viết)
     Route::get('/profile', [UserProfileController::class, 'show']);
 
     // Đăng xuất
@@ -110,6 +117,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/create-layout-form/{id}', [FormController::class, 'storeFormModel'])->name('storeFormModel');
     Route::get('/show-layout-form/{id}', [FormController::class, 'showFormModel'])->name('showFormModel');
 });
+
 Route::get('/forms', [FormCustomController::class, 'getTypeOfForms']);
 Route::get('/forms/{formId}', [FormCustomController::class, 'getFormWithFields']);
 Route::get('/form-value', [FormCustomController::class, 'getAllFormValue']);
@@ -157,7 +165,7 @@ Route::post('/google-drive/download-pdf', [GoogleDriveController::class, 'downlo
 Route::get('/google-drive/export-html', [GoogleDriveController::class, 'exportHtml']);
 Route::get('/google-drive/export-pdf', [GoogleDriveController::class, 'exportPdfUrl']);
 
-// Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);
+
 Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']);
 
 Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxFromClient']);
@@ -173,12 +181,12 @@ Route::get('/student/search/{student_code}', [StudentController::class, 'searchB
 
 Route::apiResource('folder', FolderController::class);
 Route::apiResource('type-of-forms', TypeOfFormController::class);
-Route::get('type-of-forms/pdf/{id}', [TypeOfFormController::class,'getPdfUrl']);
-Route::get('type-of-forms/word/{id}', [TypeOfFormController::class,'getWordUrl']);
+Route::get('type-of-forms/pdf/{id}', [TypeOfFormController::class, 'getPdfUrl']);
+Route::get('type-of-forms/word/{id}', [TypeOfFormController::class, 'getWordUrl']);
 
 
 Route::apiResource('notes', NoteController::class);
-Route::get('notes/showParent/{folder_id}',[NoteController::class,'showIdFolder']);
+Route::get('notes/showParent/{folder_id}', [NoteController::class, 'showIdFolder']);
 
 Route::apiResource('request-students', RequestStudentController::class);
 Route::post('/request-students/bulk-update-status', [RequestStudentController::class, 'bulkUpdateStatus']);
@@ -189,7 +197,15 @@ Route::get('/request-students/search/{student_code}', [RequestStudentController:
 Route::prefix('form-requests')->group(function () {
     Route::get('/', [FormRequestController::class, 'index']);
     Route::post('/', [FormRequestController::class, 'store']);
-    Route::get('{id}', [FormRequestController::class, 'show']);
+    Route::get('/{id}', [FormRequestController::class, 'show']);
     Route::put('{id}', [FormRequestController::class, 'update']);
     Route::delete('{id}', [FormRequestController::class, 'destroy']);
+    Route::get('/{id}/created-file', [FormRequestController::class, 'generateThenUpload']);
+    Route::get('/{filename}/get-file', [FormRequestController::class, 'getDownloadUrlByFilename']);
 });
+
+// Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);
+// Route::post('/google-drive/docx', [GoogleDriveController::class, 'generateDocx']);
+
+
+// Route::get('/scrape-element', [\App\Http\Controllers\ScrapeController::class, 'scrapeElement']);

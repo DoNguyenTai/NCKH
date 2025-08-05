@@ -19,7 +19,8 @@ class TypeOfFormController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'form_model' => 'nullable|string',
-            'parent_id' => 'nullable|exists:folders,id'
+            'parent_id' => 'nullable|exists:folders,id',
+            'note'=> 'nullable|string',
         ]);
 
         $form = TypeOfForm::create($validated);
@@ -43,6 +44,7 @@ class TypeOfFormController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'form_model' => 'nullable|string',
             'parent_id' => 'sometimes|required|exists:folders,id',
+            'note' => 'sometimes|required|string',
         ]);
 
         $form->update($validated);
