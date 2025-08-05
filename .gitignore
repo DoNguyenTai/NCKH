@@ -2,6 +2,7 @@
 /node_modules
 /public/build
 /public/hot
+/public/storage
 /vendor
 .env
 .env.backup
@@ -18,3 +19,4 @@ yarn-error.log
 .DS_Store
 storage/app/google-token.json
 storage/credentials.json
+storage/framework/**
