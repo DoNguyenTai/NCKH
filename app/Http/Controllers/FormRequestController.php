@@ -117,7 +117,8 @@ class FormRequestController extends Controller
         // Lưu vào thư mục public/generated
         $filename = basename($filePath);
         $publicPath = 'public/generated/' . $filename;
-        Storage::put($publicPath, file_get_contents($filePath));
+       $test= Storage::put($publicPath, file_get_contents($filePath));
+
         $downloadUrl = asset('storage/generated/' . $filename);
 
         // ✅ Chỉ lưu tên file vào file_docx
@@ -157,7 +158,7 @@ class FormRequestController extends Controller
     }
     public function getDownloadUrlByFilename($filename)
     {
-        $path = public_path('storage/generated/' . $filename);
+        $path = storage_path('app/generated/' . $filename);
         \Log::info($path);
         if (!file_exists($path)) {
             return response()->json(['error' => 'File not found'], 404);
