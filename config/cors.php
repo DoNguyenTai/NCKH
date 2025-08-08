@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:*'],
+    'allowed_origins' => ['http://localhost:*,https://nchh-xiaz-git-main-dongbe2k5s-projects.vercel.app'],
 
 
     'allowed_origins_patterns' => [],
