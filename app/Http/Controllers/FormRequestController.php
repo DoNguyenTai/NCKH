@@ -114,7 +114,10 @@ class FormRequestController extends Controller
         if (!$filePath) {
             return response()->json(['error' => 'Tạo file thất bại'], 500);
         }
-
+        $publicDir = public_path('generated');
+        if (!file_exists($publicDir)) {
+            mkdir($publicDir, 0755, true);
+        }
         // Lưu file vào thư mục public/generated trực tiếp (không dùng storage link)
         $filename = basename($filePath);
         $fileContent = file_get_contents($filePath);
