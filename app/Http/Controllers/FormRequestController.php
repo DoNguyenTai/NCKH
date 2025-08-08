@@ -168,10 +168,7 @@ class FormRequestController extends Controller
             return response()->json(['error' => 'Không tìm thấy file'], 404);
         }
 
-        $downloadUrl = asset('storage/generated/' . $filename);
-
-        return response()->json([
-            'url' => $downloadUrl
-        ]);
+        // Trả file trực tiếp
+        return response()->download($filePath, $filename);
     }
 }
