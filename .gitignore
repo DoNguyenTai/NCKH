@@ -3,7 +3,7 @@
 /public/build
 /public/hot
 /public/storage
-!/public/storage/**/.gitkeep
+!/public/storage/
 /vendor
 .env
 .env.backup
