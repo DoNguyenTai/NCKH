@@ -109,18 +109,29 @@ class FormRequestController extends Controller
             return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templatePath], 404);
         }
 
+        // Hàm tạo file docx từ template (bạn có sẵn)
         $filePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
         if (!$filePath) {
             return response()->json(['error' => 'Tạo file thất bại'], 500);
         }
 
-        // Lưu vào thư mục public/generated
+        // Lưu file vào thư mục public/generated trực tiếp (không dùng storage link)
         $filename = basename($filePath);
-        $publicPath = 'public/generated/' . $filename;
-        Storage::put($publicPath, file_get_contents($filePath));
-        $downloadUrl = asset('storage/generated/' . $filename);
+        $fileContent = file_get_contents($filePath);
 
-        // ✅ Chỉ lưu tên file vào file_docx
+        // Đảm bảo thư mục public/generated tồn tại
+        $publicDir = public_path('generated');
+        if (!file_exists($publicDir)) {
+            mkdir($publicDir, 0755, true);
+        }
+
+        $publicGeneratedPath = public_path('generated/' . $filename);
+        file_put_contents($publicGeneratedPath, $fileContent);
+
+        // Tạo URL truy cập file
+        $downloadUrl = asset('generated/' . $filename);
+
+        // Lưu tên file vào database
         $formRequest = FormRequest::find($formRequestId);
         if ($formRequest) {
             $formRequest->file_docx = $filename;
@@ -132,6 +143,7 @@ class FormRequestController extends Controller
             'url' => $downloadUrl
         ]);
     }
+
 
     private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
     {
@@ -157,16 +169,16 @@ class FormRequestController extends Controller
     }
     public function getDownloadUrlByFilename($filename)
     {
-        $path = public_path('storage/generated/' . $filename);
-        \Log::info($path);
+        $path = public_path('generated/' . $filename);
+        \Log::info('Checking file at: ' . $path);
+
         if (!file_exists($path)) {
+            \Log::warning('File not found: ' . $path);
             return response()->json(['error' => 'File not found'], 404);
         }
 
-        // Nếu cần ghi nội dung file từ nguồn nào đó thì lấy ở đây
-
         return response()->json([
-            'url' => asset('storage/generated/' . $filename)
+            'url' => asset('generated/' . $filename)
         ]);
     }
 }
