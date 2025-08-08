@@ -155,20 +155,18 @@ class FormRequestController extends Controller
         $templateProcessor->saveAs($outputPath);
         return $outputPath;
     }
-
     public function getDownloadUrlByFilename($filename)
     {
-        if (!$filename) {
-            return response()->json(['error' => 'Thiếu tên file'], 400);
+        $path = public_path('storage/generated/' . $filename);
+        \Log::info($path);
+        if (!file_exists($path)) {
+            return response()->json(['error' => 'File not found'], 404);
         }
 
-        $filePath = storage_path('app/public/generated/' . $filename);
+        // Nếu cần ghi nội dung file từ nguồn nào đó thì lấy ở đây
 
-        if (!file_exists($filePath)) {
-            return response()->json(['error' => 'Không tìm thấy file'], 404);
-        }
-
-        // Trả file trực tiếp
-        return response()->download($filePath, $filename);
+        return response()->json([
+            'url' => asset('storage/generated/' . $filename)
+        ]);
     }
 }
