@@ -81,52 +81,58 @@ class FormRequestController extends Controller
 
 
 
+
     public function generateThenUpload($formRequestId)
     {
-        $form = FormRequest::where('id', $formRequestId)
-            ->with(['values.field', 'formType.folder'])
-            ->first();
+        // Tìm FormRequest một lần duy nhất
+        $formRequest = FormRequest::with(['values.field', 'formType.folder'])->find($formRequestId);
 
-        if (!$form) {
+        if (!$formRequest) {
             return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
         }
 
+        // Xử lý dữ liệu (giữ nguyên)
         $data = [];
-        foreach ($form->values as $value) {
-            $key = $value->field->key ?? null;
-            if ($key) {
+        foreach ($formRequest->values as $value) {
+            if ($key = $value->field->key) {
                 $data[$key] = $value->value;
             }
         }
 
-        $templateFile = $form->formType->form_model ?? null;
+        // Kiểm tra file mẫu (giữ nguyên)
+        $templateFile = $formRequest->formType->form_model ?? null;
         if (!$templateFile) {
             return response()->json(['error' => 'Không có template file'], 400);
         }
-
         $templatePath = storage_path('app/public/documents/' . $templateFile);
         if (!file_exists($templatePath)) {
             return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templatePath], 404);
         }
 
-        $filePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
-        if (!$filePath) {
+        // Tạo file tạm (giữ nguyên)
+        $tempFilePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
+        if (!$tempFilePath) {
             return response()->json(['error' => 'Tạo file thất bại'], 500);
         }
 
-        // Lưu vào thư mục public/generated
-        $filename = basename($filePath);
-        $publicPath = 'public/generated/' . $filename;
-       $test= Storage::put($publicPath, file_get_contents($filePath));
+        // === PHẦN SỬA LỖI QUAN TRỌNG ===
+        $filename = basename($tempFilePath);
+        $fileContent = file_get_contents($tempFilePath);
 
-        $downloadUrl = asset('storage/generated/' . $filename);
+        // 1. Chỉ định rõ ràng lưu vào disk 'public'
+        //    Đường dẫn bây giờ chỉ cần là 'generated/filename.docx'
+        Storage::disk('public')->put('generated/' . $filename, $fileContent);
 
-        // ✅ Chỉ lưu tên file vào file_docx
-        $formRequest = FormRequest::find($formRequestId);
-        if ($formRequest) {
-            $formRequest->file_docx = $filename;
-            $formRequest->save();
-        }
+        // 2. Lấy URL công khai một cách chính xác
+        $downloadUrl = Storage::disk('public')->url('generated/' . $filename);
+
+        // Xóa file tạm sau khi đã lưu
+        unlink($tempFilePath);
+        // ===============================
+
+        // Cập nhật tên file vào database
+        $formRequest->file_docx = $filename;
+        $formRequest->save();
 
         return response()->json([
             'message' => 'Tạo file thành công',
@@ -158,16 +164,20 @@ class FormRequestController extends Controller
     }
     public function getDownloadUrlByFilename($filename)
     {
-        $path = storage_path('app/generated/' . $filename);
-        \Log::info($path);
-        if (!file_exists($path)) {
-            return response()->json(['error' => 'File not found'], 404);
+        // 1. Luôn sử dụng 'public' disk để làm việc với các file công khai
+        $disk = Storage::disk('public');
+        $path = 'generated/' . $filename;
+
+        // 2. Kiểm tra file có tồn tại trên 'public' disk không
+        if (!$disk->exists($path)) {
+            \Log::error('File not found on public disk: ' . $path);
+            return response()->json(['error' => 'File not found or not accessible'], 404);
         }
 
-        // Nếu cần ghi nội dung file từ nguồn nào đó thì lấy ở đây
-
+        // 3. Lấy URL công khai chính xác thông qua Storage facade
+        //    Hàm url() sẽ tự động tạo đường dẫn đúng, ví dụ: /storage/generated/file.docx
         return response()->json([
-            'url' => asset('storage/generated/' . $filename)
+            'url' => $disk->url($path)
         ]);
     }
 }
