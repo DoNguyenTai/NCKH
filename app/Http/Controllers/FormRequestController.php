@@ -199,7 +199,7 @@ private function generateDocxToPathWithTemplate(array $data, string $templatePat
 
         // 2. Kiểm tra file có tồn tại trên 'public' disk không
         if (!$disk->exists($path)) {
-            \Log::error('File not found on public disk: ' . $path);
+            Log::error('File not found on public disk: ' . $path);
             return response()->json(['error' => 'File not found or not accessible'], 404);
         }
 
