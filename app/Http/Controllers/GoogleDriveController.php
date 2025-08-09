@@ -328,27 +328,41 @@ class GoogleDriveController extends Controller
     }
 
 
-    private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
+     private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
     {
-        if (!file_exists($templatePath)) {
-            \Log::error("Không tìm thấy file template: $templatePath");
+        try {
+            if (!file_exists($templatePath)) {
+                Log::error("Không tìm thấy file template: $templatePath");
+                return null;
+            }
+
+            // Tạo đường dẫn đến thư mục storage/app/temp
+            $outputDir = storage_path('app/public/generated');
+
+            // Tạo thư mục nếu nó chưa tồn tại
+            if (!file_exists($outputDir)) {
+                mkdir($outputDir, 0775, true);
+            }
+
+            // Tạo tên file và đường dẫn tuyệt đối để thư viện PhpWord có thể lưu file
+            $filename = 'output_' . time() . '.docx';
+            $absolutePathToSave = $outputDir . '/' . $filename;
+
+            // Xử lý template và lưu file
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
+            foreach ($data as $key => $value) {
+                $templateProcessor->setValue($key, $value);
+            }
+            $templateProcessor->saveAs($absolutePathToSave);
+
+            Log::info('Đã lưu file DOCX tạm thời tại: ' . $absolutePathToSave);
+
+            // Trả về đường dẫn tuyệt đối của file tạm
+            return $absolutePathToSave;
+        } catch (\Exception $e) {
+            Log::error('Lỗi trong khi tạo file DOCX từ template: ' . $e->getMessage());
             return null;
         }
-        \Log::info($data);
-        $outputDir = storage_path('app/generated');
-        // if (!file_exists($outputDir)) {
-        //     mkdir($outputDir, 0755, true);
-        // }
-
-        $outputPath = $outputDir . '/output_' . time() . '.docx';
-        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
-
-        foreach ($data as $key => $value) {
-            $templateProcessor->setValue($key, $value);
-        }
-
-        $templateProcessor->saveAs($outputPath);
-        return $outputPath;
     }
 
 
