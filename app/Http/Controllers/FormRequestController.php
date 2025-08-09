@@ -83,7 +83,7 @@ class FormRequestController extends Controller
 
 
 
-  public function generateThenUpload($formRequestId)
+public function generateThenUpload($formRequestId)
 {
     Log::info('--- Bắt đầu quá trình tạo file DOCX cho request ID: ' . $formRequestId . ' ---');
     try {
@@ -116,7 +116,7 @@ class FormRequestController extends Controller
         }
         Log::info('Đã tìm thấy file mẫu: ' . $templatePath);
 
-        // 1. Tạo và lưu file trực tiếp vào storage, chỉ nhận lại tên file
+        // 1. Tạo và lưu file trực tiếp vào public path, chỉ nhận lại tên file
         $filename = $this->generateDocxToPathWithTemplate($data, $templatePath);
 
         if (!$filename) {
@@ -125,8 +125,8 @@ class FormRequestController extends Controller
         }
         Log::info('File đã được tạo và lưu với tên: ' . $filename);
 
-        // 2. Lấy URL công khai một cách chính xác
-        $downloadUrl = Storage::disk('public')->url('generated/' . $filename);
+        // 2. Lấy URL công khai bằng hàm asset()
+        $downloadUrl = asset('storage/generated/' . $filename);
         Log::info('Đã tạo URL công khai: ' . $downloadUrl);
 
         // 3. Cập nhật tên file vào database
@@ -149,7 +149,7 @@ class FormRequestController extends Controller
 }
 
 /**
- * Hàm này chịu trách nhiệm tạo file DOCX và lưu trực tiếp vào public storage.
+ * Hàm này chịu trách nhiệm tạo file DOCX và lưu trực tiếp vào public path.
  * Nó sẽ trả về tên file nếu thành công, hoặc null nếu thất bại.
  */
 private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
@@ -160,12 +160,20 @@ private function generateDocxToPathWithTemplate(array $data, string $templatePat
             return null;
         }
 
-        // Tạo thư mục 'generated' trong 'storage/app/public' nếu nó chưa tồn tại
-        Storage::disk('public')->makeDirectory('generated');
+        // === THAY ĐỔI: SỬ DỤNG public_path() ===
+        // Tạo đường dẫn đến thư mục public/storage/generated
+        $outputDir = public_path('storage/generated');
+
+        // Tạo thư mục nếu nó chưa tồn tại
+        if (!file_exists($outputDir)) {
+            // Cần quyền ghi để tạo thư mục
+            mkdir($outputDir, 0775, true);
+        }
 
         // Tạo tên file và đường dẫn tuyệt đối để thư viện PhpWord có thể lưu file
         $filename = 'output_' . time() . '.docx';
-        $absolutePathToSave = Storage::disk('public')->path('generated/' . $filename);
+        $absolutePathToSave = $outputDir . '/' . $filename;
+        // =======================================
 
         // Xử lý template và lưu file
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
@@ -182,8 +190,7 @@ private function generateDocxToPathWithTemplate(array $data, string $templatePat
     } catch (\Exception $e) {
         Log::error('Lỗi trong khi tạo file DOCX từ template: ' . $e->getMessage());
         return null;
-    }
-}
+    }}
     public function getDownloadUrlByFilename($filename)
     {
         // 1. Luôn sử dụng 'public' disk để làm việc với các file công khai
