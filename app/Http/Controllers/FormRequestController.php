@@ -83,114 +83,123 @@ class FormRequestController extends Controller
 
 
 
-public function generateThenUpload($formRequestId)
-{
-    Log::info('--- Bắt đầu quá trình tạo file DOCX cho request ID: ' . $formRequestId . ' ---');
-    try {
-        $formRequest = FormRequest::with(['values.field', 'formType.folder'])->find($formRequestId);
+    public function generateThenUpload($formRequestId)
+    {
+        Log::info('--- Bắt đầu quá trình tạo file DOCX cho request ID: ' . $formRequestId . ' ---');
+        try {
+            $formRequest = FormRequest::with(['values.field', 'formType.folder'])->find($formRequestId);
 
-        if (!$formRequest) {
-            Log::warning('Không tìm thấy FormRequest với ID: ' . $formRequestId);
-            return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
-        }
-
-        // Xử lý dữ liệu
-        $data = [];
-        foreach ($formRequest->values as $value) {
-            if ($key = $value->field->key) {
-                $data[$key] = $value->value;
+            if (!$formRequest) {
+                Log::warning('Không tìm thấy FormRequest với ID: ' . $formRequestId);
+                return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
             }
+
+            // Xử lý dữ liệu
+            $data = [];
+            foreach ($formRequest->values as $value) {
+                if ($key = $value->field->key) {
+                    $data[$key] = $value->value;
+                }
+            }
+            Log::info('Đã xử lý xong dữ liệu từ form.');
+
+            // Kiểm tra file mẫu
+            $templateFile = $formRequest->formType->form_model ?? null;
+            if (!$templateFile) {
+                Log::error('form_model is null cho FormType ID: ' . $formRequest->formType->id);
+                return response()->json(['error' => 'Không có template file'], 400);
+            }
+            $templatePath = storage_path('app/public/documents/' . $templateFile);
+            if (!file_exists($templatePath)) {
+                Log::error('Không tìm thấy file mẫu tại đường dẫn: ' . $templatePath);
+                return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templateFile], 404);
+            }
+            Log::info('Đã tìm thấy file mẫu: ' . $templatePath);
+
+            // 1. Tạo file tạm trong thư mục storage
+            $tempFilePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
+
+            if (!$tempFilePath || !file_exists($tempFilePath)) {
+                Log::error('Hàm generateDocxToPathWithTemplate không trả về đường dẫn hợp lệ hoặc file tạm không tồn tại.');
+                return response()->json(['error' => 'Tạo file tạm thất bại'], 500);
+            }
+            Log::info('File tạm đã được tạo thành công tại: ' . $tempFilePath);
+
+            // 2. Đọc nội dung file tạm và lưu vào public storage
+            $filename = basename($tempFilePath);
+            $fileContent = file_get_contents($tempFilePath);
+            Storage::disk('public')->put('generated/' . $filename, $fileContent);
+            Log::info('Đã sao chép file từ tạm sang public storage.');
+
+            // 3. Lấy URL công khai
+            $downloadUrl = Storage::disk('public')->url('generated/' . $filename);
+            Log::info('Đã tạo URL công khai: ' . $downloadUrl);
+
+            // 4. Xóa file tạm sau khi đã lưu
+            unlink($tempFilePath);
+            Log::info('Đã xóa file tạm: ' . $tempFilePath);
+
+            // 5. Cập nhật tên file vào database
+            $formRequest->file_docx = $filename;
+            $formRequest->save();
+            Log::info('Đã cập nhật tên file vào database thành công.');
+
+            Log::info('--- Hoàn tất quá trình tạo file DOCX. ---');
+            return response()->json([
+                'message' => 'Tạo file thành công',
+                'url' => $downloadUrl
+            ]);
+        } catch (\Exception $e) {
+            Log::error('!!! ĐÃ XẢY RA LỖI NGOẠI LỆ TRONG QUÁ TRÌNH !!!');
+            Log::error('Lỗi: ' . $e->getMessage());
+            Log::error('File: ' . $e->getFile() . ' - Dòng: ' . $e->getLine());
+            return response()->json(['error' => 'Đã có lỗi nghiêm trọng xảy ra. Vui lòng kiểm tra logs.'], 500);
         }
-        Log::info('Đã xử lý xong dữ liệu từ form.');
-
-        // Kiểm tra file mẫu
-        $templateFile = $formRequest->formType->form_model ?? null;
-        if (!$templateFile) {
-            Log::error('form_model is null cho FormType ID: ' . $formRequest->formType->id);
-            return response()->json(['error' => 'Không có template file'], 400);
-        }
-        $templatePath = storage_path('app/public/documents/' . $templateFile);
-        if (!file_exists($templatePath)) {
-            Log::error('Không tìm thấy file mẫu tại đường dẫn: ' . $templatePath);
-            return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templateFile], 404);
-        }
-        Log::info('Đã tìm thấy file mẫu: ' . $templatePath);
-
-        // 1. Tạo và lưu file trực tiếp vào public path, chỉ nhận lại tên file
-        $filename = $this->generateDocxToPathWithTemplate($data, $templatePath);
-
-        if (!$filename) {
-            Log::error('Hàm generateDocxToPathWithTemplate đã thất bại.');
-            return response()->json(['error' => 'Tạo file thất bại'], 500);
-        }
-        Log::info('File đã được tạo và lưu với tên: ' . $filename);
-
-        // 2. Lấy URL công khai bằng hàm asset()
-        $downloadUrl = asset('storage/generated/' . $filename);
-        Log::info('Đã tạo URL công khai: ' . $downloadUrl);
-
-        // 3. Cập nhật tên file vào database
-        $formRequest->file_docx = $filename;
-        $formRequest->save();
-        Log::info('Đã cập nhật tên file vào database thành công.');
-
-        Log::info('--- Hoàn tất quá trình tạo file DOCX. ---');
-        return response()->json([
-            'message' => 'Tạo file thành công',
-            'url' => $downloadUrl
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('!!! ĐÃ XẢY RA LỖI NGOẠI LỆ TRONG QUÁ TRÌNH !!!');
-        Log::error('Lỗi: ' . $e->getMessage());
-        Log::error('File: ' . $e->getFile() . ' - Dòng: ' . $e->getLine());
-        return response()->json(['error' => 'Đã có lỗi nghiêm trọng xảy ra. Vui lòng kiểm tra logs.'], 500);
     }
-}
 
-/**
- * Hàm này chịu trách nhiệm tạo file DOCX và lưu trực tiếp vào public path.
- * Nó sẽ trả về tên file nếu thành công, hoặc null nếu thất bại.
- */
-private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
-{
-    try {
-        if (!file_exists($templatePath)) {
-            Log::error("Không tìm thấy file template: $templatePath");
+    /**
+     * Hàm này chịu trách nhiệm tạo file DOCX và lưu vào một thư mục tạm trong storage.
+     * Nó sẽ trả về đường dẫn tuyệt đối đến file tạm nếu thành công, hoặc null nếu thất bại.
+     */
+    private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
+    {
+        try {
+            if (!file_exists($templatePath)) {
+                Log::error("Không tìm thấy file template: $templatePath");
+                return null;
+            }
+
+            // === THAY ĐỔI: SỬ DỤNG storage_path() để lưu file tạm ===
+            // Tạo đường dẫn đến thư mục storage/app/temp
+            $outputDir = storage_path('app/temp');
+
+            // Tạo thư mục nếu nó chưa tồn tại
+            if (!file_exists($outputDir)) {
+                mkdir($outputDir, 0775, true);
+            }
+
+            // Tạo tên file và đường dẫn tuyệt đối để thư viện PhpWord có thể lưu file
+            $filename = 'output_' . time() . '.docx';
+            $absolutePathToSave = $outputDir . '/' . $filename;
+            // =======================================================
+
+            // Xử lý template và lưu file
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
+            foreach ($data as $key => $value) {
+                $templateProcessor->setValue($key, $value);
+            }
+            $templateProcessor->saveAs($absolutePathToSave);
+
+            Log::info('Đã lưu file DOCX tạm thời tại: ' . $absolutePathToSave);
+
+            // Trả về đường dẫn tuyệt đối của file tạm
+            return $absolutePathToSave;
+        } catch (\Exception $e) {
+            Log::error('Lỗi trong khi tạo file DOCX từ template: ' . $e->getMessage());
             return null;
         }
+    }
 
-        // === THAY ĐỔI: SỬ DỤNG public_path() ===
-        // Tạo đường dẫn đến thư mục public/storage/generated
-        $outputDir = public_path('storage/generated');
-
-        // Tạo thư mục nếu nó chưa tồn tại
-        if (!file_exists($outputDir)) {
-            // Cần quyền ghi để tạo thư mục
-            mkdir($outputDir, 0775, true);
-        }
-
-        // Tạo tên file và đường dẫn tuyệt đối để thư viện PhpWord có thể lưu file
-        $filename = 'output_' . time() . '.docx';
-        $absolutePathToSave = $outputDir . '/' . $filename;
-        // =======================================
-
-        // Xử lý template và lưu file
-        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($templatePath);
-        foreach ($data as $key => $value) {
-            $templateProcessor->setValue($key, $value);
-        }
-        $templateProcessor->saveAs($absolutePathToSave);
-
-        Log::info('Đã lưu file DOCX trực tiếp tại: ' . $absolutePathToSave);
-
-        // Chỉ trả về tên file
-        return $filename;
-
-    } catch (\Exception $e) {
-        Log::error('Lỗi trong khi tạo file DOCX từ template: ' . $e->getMessage());
-        return null;
-    }}
     public function getDownloadUrlByFilename($filename)
     {
         // 1. Luôn sử dụng 'public' disk để làm việc với các file công khai
