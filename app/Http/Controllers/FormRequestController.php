@@ -180,7 +180,7 @@ private function generateDocxToPathWithTemplate(array $data, string $templatePat
 
         // === THAY ĐỔI: SỬ DỤNG storage_path() để lưu file tạm ===
         // Tạo đường dẫn đến thư mục storage/app/temp
-        $outputDir = storage_path('app/generated');
+        $outputDir = storage_path('app/public/generated');
 
         // Tạo thư mục nếu nó chưa tồn tại
         if (!file_exists($outputDir)) {
