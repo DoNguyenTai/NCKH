@@ -10,7 +10,7 @@ use Caseyamcl\Flysystem\GoogleDrive\GoogleDriveAdapter;
 
 use Google_Client;
 use Google_Service_Drive;
-
+use Illuminate\Support\Facades\URL;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -27,7 +27,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
-
-       
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
     }
 }
