@@ -254,36 +254,49 @@ class GoogleDriveController extends Controller
         $fileMetadata = new \Google_Service_Drive_DriveFile([
             'name' => $fileName,
             // Chuyển đổi DOCX sang Google Docs khi upload
-            'mimeType' => 'application/vnd.google-apps.document' 
+            'mimeType' => 'application/vnd.google-apps.document'
         ]);
 
         $fileContents = file_get_contents($filePath);
 
+        // 1. Upload file lên Drive
         $uploadedFile = $driveService->files->create($fileMetadata, [
             'data' => $fileContents,
-            // Quan trọng: mimeType ở đây phải là của file gốc (DOCX)
             'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'uploadType' => 'multipart',
             'fields' => 'id,webViewLink' // Lấy về ID và link xem file
         ]);
 
-        // Sau khi upload thành công, xóa file tạm trên server
+        // === PHẦN CODE MỚI ĐỂ CẤP QUYỀN PUBLIC ===
+        // 2. Lấy ID của file vừa upload
+        $fileId = $uploadedFile->id;
+
+        // 3. Tạo một đối tượng quyền mới
+        $permission = new \Google_Service_Drive_Permission([
+            'type' => 'anyone', // Bất kỳ ai có link
+            'role' => 'writer' // quyền chỉnh sửa
+        ]);
+
+        // 4. Áp dụng quyền vào file trên Drive
+        $driveService->permissions->create($fileId, $permission);
+        // ==========================================
+
+        // 5. Xóa file tạm trên server sau khi hoàn tất
         unlink($filePath);
 
+        // 6. Trả về kết quả thành công với link xem công khai
         return [
             'success' => true,
-            'message' => 'Đã upload file lên Google Drive',
-            'url' => $uploadedFile->webViewLink, // Link để xem file trên trình duyệt
-            'file_id' => $uploadedFile->id
+            'message' => 'Đã upload và cấp quyền public cho file',
+            'url' => $uploadedFile->webViewLink, // Link này giờ đã public
+            'file_id' => $fileId
         ];
 
     } catch (\Exception $e) {
-        \Log::error('Lỗi upload: ' . $e->getMessage());
-        return ['success' => false, 'error' => 'Upload thất bại', 'details' => $e->getMessage(), 'status_code' => 500];
+        \Log::error('Lỗi upload hoặc cấp quyền: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Upload hoặc cấp quyền thất bại', 'details' => $e->getMessage(), 'status_code' => 500];
     }
 }
-
-
 /**
  * Hàm chính để điều khiển luồng: Tạo file -> Upload -> Lưu URL -> Trả về response.
  *
