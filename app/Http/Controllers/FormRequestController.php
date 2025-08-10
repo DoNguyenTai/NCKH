@@ -145,6 +145,7 @@ class FormRequestController extends Controller
 
             // 4. Cập nhật tên file vào database
             $formRequest->file_docx = $filename;
+            $formRequest->status='Đã tạo file';
             $formRequest->save();
             Log::info('Đã cập nhật tên file vào database thành công.');
 

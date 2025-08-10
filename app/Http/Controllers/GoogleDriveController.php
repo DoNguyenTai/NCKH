@@ -236,97 +236,116 @@ class GoogleDriveController extends Controller
 
 
 
-    private function uploadDocxToDriveFromPath(string $filePath)
-    {
-        if (!file_exists($filePath)) {
-            return response()->json(['error' => 'Không tìm thấy file để upload'], 500);
-        }
+  private function uploadDocxToDriveFromPath(string $filePath): array
+{
+    if (!file_exists($filePath)) {
+        return ['success' => false, 'error' => 'Không tìm thấy file để upload', 'status_code' => 500];
+    }
 
-        $client = $this->getAuthenticatedClient();
-        if (!$client) {
-            return response()->json(['error' => 'Chưa xác thực Google'], 401);
-        }
+    $client = $this->getAuthenticatedClient();
+    if (!$client) {
+        return ['success' => false, 'error' => 'Chưa xác thực Google', 'status_code' => 401];
+    }
 
-        try {
-            $driveService = new \Google_Service_Drive($client);
+    try {
+        $driveService = new \Google_Service_Drive($client);
+        $fileName = 'Generated_' . time() . '_' . basename($filePath);
 
-            $fileMetadata = new \Google_Service_Drive_DriveFile([
-                'name' => 'Generated_' . time() . '.docx',
-                'mimeType' => 'application/vnd.google-apps.document'
-                // 'parents' => ['YOUR_FOLDER_ID'] // nếu muốn upload vào thư mục cụ thể
-            ]);
+        $fileMetadata = new \Google_Service_Drive_DriveFile([
+            'name' => $fileName,
+            // Chuyển đổi DOCX sang Google Docs khi upload
+            'mimeType' => 'application/vnd.google-apps.document' 
+        ]);
 
-            // Lấy nội dung file từ Storage
-            $fileContents = file_get_contents($filePath);
-            \Log::info($fileContents);
-            $uploadedFile = $driveService->files->create($fileMetadata, [
-                'data' => $fileContents,
-                'mimeType' => 'application/vnd.google-apps.document',
-                'uploadType' => 'multipart',
-                'fields' => 'id,webViewLink'
-            ]);
-            // Xóa file tạm nếu cần
-            // unlink($filePath);
+        $fileContents = file_get_contents($filePath);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã upload file lên Google Drive',
-                'url' => $uploadedFile->webViewLink,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Lỗi upload: ' . $e->getMessage());
-            return response()->json(['error' => 'Upload thất bại', 'details' => $e->getMessage()], 500);
+        $uploadedFile = $driveService->files->create($fileMetadata, [
+            'data' => $fileContents,
+            // Quan trọng: mimeType ở đây phải là của file gốc (DOCX)
+            'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'uploadType' => 'multipart',
+            'fields' => 'id,webViewLink' // Lấy về ID và link xem file
+        ]);
+
+        // Sau khi upload thành công, xóa file tạm trên server
+        unlink($filePath);
+
+        return [
+            'success' => true,
+            'message' => 'Đã upload file lên Google Drive',
+            'url' => $uploadedFile->webViewLink, // Link để xem file trên trình duyệt
+            'file_id' => $uploadedFile->id
+        ];
+
+    } catch (\Exception $e) {
+        \Log::error('Lỗi upload: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Upload thất bại', 'details' => $e->getMessage(), 'status_code' => 500];
+    }
+}
+
+
+/**
+ * Hàm chính để điều khiển luồng: Tạo file -> Upload -> Lưu URL -> Trả về response.
+ *
+ * @param int $formRequestId
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function generateThenUpload($formRequestId)
+{
+    // B1 & B2: Lấy thông tin và chuẩn bị dữ liệu (giữ nguyên)
+    $form = FormRequest::with(['values.field', 'formType.folder'])->find($formRequestId);
+
+    if (!$form) {
+        return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
+    }
+
+    $data = [];
+    foreach ($form->values as $value) {
+        if ($key = $value->field->key ?? null) {
+            $data[$key] = $value->value;
         }
     }
 
-
-
-    public function generateThenUpload($formRequestId)
-    {
-        // B1: Lấy thông tin form + values
-        $form = FormRequest::where('id', $formRequestId)
-            // ->whereHas('values', function ($query) use ($studentCode) {
-            //     $query->where('student_code', $studentCode);
-            // })
-            ->with([
-                'values.field',
-                'formType.folder'
-            ])
-            ->first();
-            \Log::info($form->toArray());
-        if (!$form) {
-            return response()->json(['error' => 'Không tìm thấy biểu mẫu'], 404);
-        }
-        \Log::info($form);
-        // B2: Tạo mảng $data: ['key' => value]
-        $data = [];
-        foreach ($form->values as $value) {
-            $key = $value->field->key ?? null;
-            if ($key) {
-                $data[$key] = $value->value;
-            }
-        }
-        \Log::info($form->formType->form_model);
-        $templateFile = $form->formType->form_model ?? null;
-
-        if (!$templateFile) {
-            return response()->json(['error' => 'Không có template file'], 400);
-        }
-
-        $templatePath = storage_path('app/public/documents/' . $templateFile);
-        if (!file_exists($templatePath)) {
-            return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templatePath], 404);
-        }
-
-        // B4: Generate và upload
-        $filePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
-        if (!$filePath) {
-            return response()->json(['error' => 'Tạo file thất bại'], 500);
-        }
-        \Log::info($filePath);
-        return $this->uploadDocxToDriveFromPath($filePath);
+    $templateFile = $form->formType->form_model ?? null;
+    if (!$templateFile) {
+        return response()->json(['error' => 'Biểu mẫu không có file mẫu (template)'], 400);
     }
 
+    $templatePath = storage_path('app/public/documents/' . $templateFile);
+    if (!file_exists($templatePath)) {
+        return response()->json(['error' => 'Không tìm thấy file mẫu: ' . $templateFile], 404);
+    }
+
+    // B3: Tạo file docx tạm thời
+    $filePath = $this->generateDocxToPathWithTemplate($data, $templatePath);
+    if (!$filePath) {
+        return response()->json(['error' => 'Tạo file thất bại'], 500);
+    }
+
+    // B4: Upload file tạm lên Google Drive
+    $uploadResult = $this->uploadDocxToDriveFromPath($filePath);
+
+    // B5: Kiểm tra kết quả upload và xử lý
+    if ($uploadResult['success']) {
+        // Nếu upload thành công, LƯU URL vào database
+        $form->status = "Đã tạo file và tạo URL để in";
+        $form->url_docx = $uploadResult['url']; // << LẤY URL TỪ KẾT QUẢ UPLOAD
+        $form->save();
+
+        // Trả về response thành công cho client
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã tạo file và upload lên Google Drive thành công!',
+            'url' => $uploadResult['url']
+        ]);
+    } else {
+        // Nếu upload thất bại, trả về lỗi từ hàm upload
+        return response()->json([
+            'error' => $uploadResult['error'],
+            'details' => $uploadResult['details'] ?? null
+        ], $uploadResult['status_code']);
+    }
+}
 
      private function generateDocxToPathWithTemplate(array $data, string $templatePath): ?string
     {

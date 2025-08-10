@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\FormCustomController;
 use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocxController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FormController;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Jetstream\Http\Controllers\Inertia\UserProfileController;
 use Illuminate\Session\Middleware\StartSession;
 use Laravel\Jetstream\Http\Livewire\Profile\ShowProfile;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 // >>>>>>> Stashed changes
 /*
@@ -202,6 +204,14 @@ Route::prefix('form-requests')->group(function () {
     Route::delete('{id}', [FormRequestController::class, 'destroy']);
     Route::get('/{id}/created-file', [FormRequestController::class, 'generateThenUpload']);
     Route::get('/{filename}/get-file', [FormRequestController::class, 'getDownloadUrlByFilename']);
+});
+
+Route::prefix('dashboard')->group(function(){
+    Route::get('/',[DashboardController::class,'index']);
+    Route::get('/waiting',[DashboardController::class,'statusWaiting']);
+    Route::get('/success',[DashboardController::class,'statusSuccess']);
+    Route::get('/total',[DashboardController::class,'totalNumberOfUser']);
+
 });
 
 // Route::post('/google-drive/upload-docx', [GoogleDriveController::class, 'uploadDocxToDrive']);

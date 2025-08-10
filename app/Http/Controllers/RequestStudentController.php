@@ -25,6 +25,7 @@ class RequestStudentController extends Controller
 
                 'student_code' => $item->student_code,
                 'created_at' => $item->created_at,
+                'updated_at'=>$item->updated_at,
             ];
         });
 
@@ -67,7 +68,7 @@ class RequestStudentController extends Controller
             'status' => 'sometimes|string' //
         ]);
 
-        $requestStudent->update($request->only(['folder_id', 'student_code']));
+        $requestStudent->update($request->only(['folder_id', 'student_code','status']));
 
         return response()->json($requestStudent);
     }
